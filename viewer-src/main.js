@@ -8,7 +8,7 @@ import { MeshBVH, MeshBVHUniformStruct, BVHShaderGLSL } from 'three-mesh-bvh';
 // Mostly dark room with a few very bright softboxes: dark facets + white flashes.
 function buildStudio(bright = false) {
   const scene = new THREE.Scene();
-  scene.background = bright ? new THREE.Color(0.13, 0.13, 0.135) : new THREE.Color(0.05, 0.05, 0.055);
+  scene.background = bright ? new THREE.Color(0.13, 0.13, 0.13) : new THREE.Color(0.05, 0.05, 0.05);
   const box = (w, h, intensity, pos, look, tint = [1, 1, 1]) => {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h),
       new THREE.MeshBasicMaterial({ color: new THREE.Color(...tint).multiplyScalar(intensity), side: THREE.DoubleSide }));
@@ -21,14 +21,14 @@ function buildStudio(bright = false) {
   box(8, 1.2, 9, [0, 3, -6], [0, 0, 0]);
   box(1.0, 5, 18, [2.5, 4, 6], [0, 0, 0]);
   box(1.0, 5, 16, [-3, 4, -5], [0, 0, 0]);
-  box(3, 3, 4, [0, -6, 0], [0, 0, 0], [0.95, 0.97, 1]);
+  box(3, 3, 4, [0, -6, 0], [0, 0, 0]);
   // ring of narrow strips around the horizon: lots of small facet flashes
   for (let i = 0; i < 10; i++) {
     const a = (i / 10) * Math.PI * 2 + 0.2, r = 6.5;
     box(0.6, 3.2, i % 2 ? 7 : 12, [Math.cos(a) * r, 0.6, Math.sin(a) * r], [0, 0, 0]);
   }
   // a light gray floor sweep so the band never reflects pure black
-  const floor = new THREE.Mesh(new THREE.CircleGeometry(9, 48), new THREE.MeshBasicMaterial({ color: bright ? new THREE.Color(0.45, 0.45, 0.46) : new THREE.Color(0.18, 0.18, 0.19) }));
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(9, 48), new THREE.MeshBasicMaterial({ color: bright ? new THREE.Color(0.45, 0.45, 0.45) : new THREE.Color(0.18, 0.18, 0.18) }));
   floor.rotation.x = -Math.PI / 2; floor.position.y = -3.5; scene.add(floor);
   return scene;
 }
@@ -40,6 +40,7 @@ function diamondMaterial(bvh, envMap, opts) {
     envMap: { value: envMap },
     ior: { value: 2.42 },
     dispersion: { value: opts.dispersion },
+    fireAmount: { value: 0.5 },
     envIntensity: { value: 1.0 },
     tint: { value: new THREE.Color(1, 1, 1) },
     modelInv: { value: new THREE.Matrix4() },
@@ -64,7 +65,7 @@ function diamondMaterial(bvh, envMap, opts) {
       ${BVHShaderGLSL.bvh_ray_functions}
       uniform BVH bvh;
       uniform samplerCube envMap;
-      uniform float ior, dispersion, envIntensity;
+      uniform float ior, dispersion, envIntensity, fireAmount;
       uniform vec3 tint;
       uniform mat4 modelInv;
       uniform mat4 modelMat;
@@ -110,13 +111,20 @@ function diamondMaterial(bvh, envMap, opts) {
         vec3 nL = normalize((transpose(mat3(modelInv)) * n));
         vec3 vL = normalize((modelInv * vec4(v, 0.0)).xyz);
         vec3 col;
+        // white (single-IOR) path gives the facet pattern; dispersion only adds sparse
+        // colored sparks: R/B traced with slightly offset IOR, blended in weakly and
+        // kept luminance-neutral so the stone never takes on an overall tint.
+        col = traceInside(roL, refract(vL, nL, 1.0 / ior), ior);
       #if CHROMA
         float iorR = ior - dispersion, iorB = ior + dispersion;
-        col.r = traceInside(roL, refract(vL, nL, 1.0 / iorR), iorR).r;
-        col.g = traceInside(roL, refract(vL, nL, 1.0 / ior), ior).g;
-        col.b = traceInside(roL, refract(vL, nL, 1.0 / iorB), iorB).b;
-      #else
-        col = traceInside(roL, refract(vL, nL, 1.0 / ior), ior);
+        float r = traceInside(roL, refract(vL, nL, 1.0 / iorR), iorR).r;
+        float b = traceInside(roL, refract(vL, nL, 1.0 / iorB), iorB).b;
+        vec3 fire = vec3(r, col.g, b);
+        float lw = dot(col, vec3(0.2126, 0.7152, 0.0722));
+        float lf = dot(fire, vec3(0.2126, 0.7152, 0.0722));
+        fire *= lw / max(lf, 1e-4);                       // same brightness as the white path
+        float spark = smoothstep(0.7, 1.8, lw);           // color only in the brightest flashes
+        col = mix(col, fire, fireAmount * spark);
       #endif
         col = col * (1.0 - F) * tint + refl * F;
         gl_FragColor = vec4(col, 1.0);
@@ -153,7 +161,10 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract }) 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true; controls.dampingFactor = 0.08;
   controls.enablePan = true; controls.screenSpacePanning = true;
-  controls.autoRotate = true; controls.autoRotateSpeed = 16 / 6; // ~16deg/s
+  // debug/QA flags: ?still (no auto-rotate), ?mask (flat diamond mask for color measurement)
+  const qs = new URLSearchParams(location.search);
+  const STILL = qs.has('still') || qs.has('mask'), MASK = qs.has('mask');
+  controls.autoRotate = !STILL; controls.autoRotateSpeed = 16 / 6; // ~16deg/s
   controls.rotateSpeed = 0.8;
 
   let home = null, idleTimer = null;
@@ -168,7 +179,7 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract }) 
   g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
   const shadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1),
     new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false, toneMapped: false }));
-  shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
+  shadow.rotation.x = -Math.PI / 2; if (!MASK) scene.add(shadow);
 
   const loader = new GLTFLoader();
   loader.load(src, (gltf) => {
@@ -177,15 +188,17 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract }) 
     root.traverse((o) => {
       if (!o.isMesh) return;
       const name = o.material && o.material.name;
-      if (name === 'Diamond') {
+      if (MASK) {
+        o.material = new THREE.MeshBasicMaterial({ color: name === 'Diamond' ? 0xff00ff : 0x000000, toneMapped: false });
+      } else if (name === 'Diamond') {
         o.geometry.deleteAttribute('normal');
         const bvh = new MeshBVH(o.geometry);
         const big = /Center|Heart/.test(o.name);
         const medium = /3\.0mm/.test(o.name);
         o.material = diamondMaterial(bvh, cubeRT.texture, {
-          bounces: big ? 6 : 4, chroma: big || (medium && !isPhone), dispersion: 0.03,
+          bounces: big ? 6 : 4, chroma: big, dispersion: 0.02,
         });
-        o.material.uniforms.envIntensity.value = big ? 1.0 : 1.6;
+        o.material.uniforms.envIntensity.value = big ? 1.3 : 1.7;
       } else {
         o.material = new THREE.MeshPhysicalMaterial({
           color: new THREE.Color(0.90, 0.90, 0.89), metalness: 1, roughness: 0.075,
