@@ -1,0 +1,39 @@
+# Amy's Ring: static site with automatic HTTPS (Let's Encrypt) via Caddy.
+# Mounted into the container at /etc/caddy/Caddyfile; site files at /srv.
+
+(site_common) {
+	root * /srv
+	file_server
+
+	# compress text, JS and the 3D model (Caddy's default list skips model/*)
+	encode {
+		zstd
+		gzip
+		match {
+			header Content-Type text/*
+			header Content-Type application/javascript*
+			header Content-Type text/javascript*
+			header Content-Type application/json*
+			header Content-Type model/gltf-binary*
+			header Content-Type image/svg+xml*
+		}
+	}
+
+	@glb path *.glb
+	header @glb Content-Type model/gltf-binary
+
+	# always revalidate so updates show up immediately (ETag/Last-Modified keep it cheap)
+	header Cache-Control "no-cache"
+	header X-Content-Type-Options "nosniff"
+	header Referrer-Policy "strict-origin-when-cross-origin"
+}
+
+amysring.duckdns.org {
+	import site_common
+	header Strict-Transport-Security "max-age=86400"
+}
+
+# bare IP / any other host name on port 80 -> the secure domain
+http:// {
+	redir https://amysring.duckdns.org{uri} 302
+}
