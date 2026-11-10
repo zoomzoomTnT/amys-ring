@@ -3,285 +3,163 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f4f2ef">
+  <meta name="theme-color" content="#ffffff">
   <meta name="color-scheme" content="light">
   <meta name="robots" content="noindex">
+  <link rel="icon" href="data:,">
   <title>Amy's Ring</title>
-  <script type="module" src="./model-viewer.min.js"></script>
-  <style>
+    <style>
     :root {
-      --bg: #f4f2ef;
-      --ink: #2c2a27;
-      --muted: #6b6862;
-      --line: rgba(44, 42, 39, 0.14);
-      --panel: rgba(255, 255, 253, 0.82);
-      --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+      --bg: #ffffff;
+      --ink: #1d1c1a;
+      --muted: #85827c;
+      --line: rgba(29, 28, 26, 0.12);
+      --panel: rgba(255, 255, 255, 0.9);
+      --serif: "Didot", "Bodoni 72", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
       --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      --safe-top: max(16px, env(safe-area-inset-top));
-      --safe-bottom: max(14px, env(safe-area-inset-bottom));
+      --safe-top: max(14px, env(safe-area-inset-top));
+      --safe-bottom: max(12px, env(safe-area-inset-bottom));
       --safe-left: max(16px, env(safe-area-inset-left));
       --safe-right: max(16px, env(safe-area-inset-right));
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--bg); color: var(--ink); font-family: var(--sans);
+      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+    body { height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-direction: column;
+      padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); }
+    button { font: inherit; color: inherit; }
 
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      color: var(--ink);
-      font-family: var(--sans);
-      -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility;
-    }
+    header { text-align: center; flex-shrink: 0; padding-top: 4px; }
+    #site-title { font-family: var(--serif); font-weight: 300; font-size: clamp(1.1rem, 4.4vw, 1.6rem);
+      letter-spacing: 0.32em; text-transform: uppercase; line-height: 1.2; margin-right: -0.32em; }
+    .subtitle { margin-top: 0.4rem; font-family: var(--serif); font-style: italic; font-size: 0.78rem;
+      color: var(--muted); letter-spacing: 0.06em; }
 
-    body {
-      min-height: 100vh;
-      min-height: 100dvh;
-      overflow: hidden;
-    }
+    .stage { position: relative; flex: 1; min-height: 0; margin: 0.5rem calc(-1 * var(--safe-left)) 0; }
+    #viewer, .still { position: absolute; inset: 0; }
+    #viewer canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+    .still { display: none; align-items: center; justify-content: center; flex-direction: column;
+      padding: 0 var(--safe-left); cursor: zoom-in; background: var(--bg); border: 0; width: 100%; }
+    .still img { max-width: 100%; max-height: calc(100% - 1.6rem); object-fit: contain; }
+    .still figcaption, .lb-cap { margin-top: 0.5rem; font-family: var(--serif); font-style: italic; font-size: 0.72rem;
+      color: var(--muted); letter-spacing: 0.08em; min-height: 1em; }
+    .stage[data-mode="image"] #viewer { visibility: hidden; }
+    .stage[data-mode="image"] .still { display: flex; }
 
-    model-viewer {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      background: var(--bg);
-      --poster-color: var(--bg);
-    }
+    .hint { position: absolute; left: 50%; bottom: 0.4rem; transform: translateX(-50%);
+      font-family: var(--serif); font-style: italic; font-size: 0.72rem; letter-spacing: 0.08em; color: var(--muted);
+      white-space: nowrap; pointer-events: none; transition: opacity 0.4s ease; }
+    .hint.is-hidden, .stage[data-mode="image"] .hint { opacity: 0; }
 
-    header {
-      position: fixed;
-      top: var(--safe-top);
-      left: var(--safe-left);
-      right: var(--safe-right);
-      z-index: 2;
-      text-align: center;
-      pointer-events: none;
-    }
+    .progress { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);
+      width: min(9.5rem, 46vw); pointer-events: none; transition: opacity 0.35s ease, visibility 0.35s ease; }
+    .progress.is-hidden { opacity: 0; visibility: hidden; }
+    .progress-label { display: block; text-align: center; font-size: 0.62rem; letter-spacing: 0.3em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 0.6rem; }
+    .progress-track { height: 1px; background: var(--line); overflow: hidden; }
+    .progress-fill { height: 100%; width: 100%; background: var(--ink); transform: scaleX(0);
+      transform-origin: left center; transition: transform 0.16s linear; }
 
-    #site-title {
-      font-family: var(--serif);
-      font-weight: 400;
-      font-size: clamp(1.15rem, 3.6vw, 1.65rem);
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      line-height: 1.2;
-    }
+    /* gallery strip */
+    .strip { flex-shrink: 0; display: flex; gap: 0.7rem; overflow-x: auto; scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 0.7rem 0.1rem 0.6rem;
+      justify-content: safe center; }
+    .strip::-webkit-scrollbar { display: none; }
+    .thumb { appearance: none; background: none; border: 0; cursor: pointer; flex: 0 0 auto; scroll-snap-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 0.4rem; width: 4.6rem; }
+    .thumb .frame { width: 4.6rem; height: 4.6rem; border: 1px solid var(--line); display: flex; align-items: center;
+      justify-content: center; overflow: hidden; background: #fafafa; transition: border-color 0.25s ease; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .thumb .three-d { font-family: var(--serif); font-size: 1.15rem; letter-spacing: 0.12em; font-weight: 300; }
+    .thumb .label { font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted);
+      white-space: nowrap; padding-bottom: 3px; border-bottom: 1px solid transparent; transition: color .25s, border-color .25s; }
+    .thumb[aria-selected="true"] .frame { border-color: var(--ink); }
+    .thumb[aria-selected="true"] .label { color: var(--ink); border-bottom-color: var(--ink); }
+    .thumb:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
 
-    .hint {
-      position: fixed;
-      left: 50%;
-      bottom: calc(var(--safe-bottom) + 72px);
-      transform: translateX(-50%);
-      z-index: 2;
-      font-size: 0.72rem;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      white-space: nowrap;
-      pointer-events: none;
-      transition: opacity 0.4s ease;
-    }
-
-    .hint.is-hidden { opacity: 0; }
-
-    .chrome {
-      position: fixed;
-      left: var(--safe-left);
-      right: var(--safe-right);
-      bottom: var(--safe-bottom);
-      z-index: 3;
-      display: flex;
-      align-items: flex-end;
-      gap: 0.55rem;
-      pointer-events: none;
-    }
-
-    .chrome > * { pointer-events: auto; }
-
-    #reset {
-      appearance: none;
-      flex-shrink: 0;
-      background: var(--panel);
-      color: var(--ink);
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 0.7rem 0.95rem;
-      font: 500 0.72rem/1 var(--sans);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      cursor: pointer;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      white-space: nowrap;
-    }
-
-    #reset:hover { border-color: rgba(44, 42, 39, 0.35); }
-    #reset:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-
-    .specs {
-      flex: 1;
-      min-width: 0;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-    }
-
-    .specs summary {
-      list-style: none;
-      cursor: pointer;
-      padding: 0.7rem 0.95rem;
-      font-size: 0.72rem;
-      font-weight: 500;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      user-select: none;
-    }
-
+    /* details + reset */
+    .chrome { flex-shrink: 0; position: relative; display: flex; align-items: flex-end; gap: 0.55rem; }
+    #reset { appearance: none; flex-shrink: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 0;
+      padding: 0.72rem 0.95rem; font: 400 0.62rem/1 var(--sans); letter-spacing: 0.22em; text-transform: uppercase;
+      cursor: pointer; white-space: nowrap; }
+    #reset[hidden] { display: none; }
+    #reset:hover { border-color: var(--ink); }
+    .specs { flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--line);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+    .specs[open] { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; }
+    .specs summary { list-style: none; cursor: pointer; padding: 0.72rem 0.95rem; font-size: 0.62rem; font-weight: 400;
+      letter-spacing: 0.22em; text-transform: uppercase; display: flex; align-items: center;
+      justify-content: space-between; gap: 0.75rem; user-select: none; }
     .specs summary::-webkit-details-marker { display: none; }
+    .specs summary::after { content: "+"; font-size: 0.95rem; line-height: 1; font-weight: 300; }
+    .specs[open] summary::after { content: "\2212"; }
+    .specs summary:focus-visible { outline: 1px solid var(--ink); outline-offset: -2px; }
+    .spec-body { border-top: 1px solid var(--line); padding: 0.85rem 0.95rem 1rem; }
+    .spec-body dl { display: grid; grid-template-columns: auto 1fr; gap: 0.55rem 1.1rem; font-size: 0.8rem; line-height: 1.4; }
+    .spec-body dt { font-family: var(--serif); font-style: italic; color: var(--muted); white-space: nowrap; letter-spacing: 0.03em; }
+    .spec-body dd { font-weight: 300; }
 
-    .specs summary::after {
-      content: "▾";
-      font-size: 0.85rem;
-      line-height: 1;
-      color: var(--ink);
-      transform: none;
-      margin: 0;
-    }
-
-    .specs[open] summary::after {
-      content: "▴";
-    }
-
-    .specs summary:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; border-radius: 14px; }
-
-    .spec-body {
-      border-top: 1px solid var(--line);
-      padding: 0.75rem 0.95rem 0.9rem;
-    }
-
-    .spec-body dl {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 0.45rem 0.9rem;
-      font-size: 0.8rem;
-      line-height: 1.35;
-    }
-
-    .spec-body dt {
-      color: var(--muted);
-      font-weight: 500;
-      letter-spacing: 0.02em;
-      white-space: nowrap;
-    }
-
-    .spec-body dd { font-weight: 400; }
-
-    .progress {
-      position: absolute;
-      left: 50%;
-      top: 46%;
-      transform: translate(-50%, -50%);
-      width: min(9.5rem, 46vw);
-      pointer-events: none;
-    }
-
-    .progress.is-hidden {
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.35s ease, visibility 0.35s ease;
-    }
-
-    .progress-label {
-      display: block;
-      text-align: center;
-      font-size: 0.68rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 0.55rem;
-    }
-
-    .progress-track {
-      height: 1px;
-      background: rgba(44, 42, 39, 0.12);
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      height: 100%;
-      width: 100%;
-      background: var(--ink);
-      transform: scaleX(0);
-      transform-origin: left center;
-      transition: transform 0.16s linear;
-    }
+    /* lightbox */
+    .lightbox { position: fixed; inset: 0; z-index: 10; background: #fff; display: none; flex-direction: column; }
+    .lightbox.is-open { display: flex; }
+    .lb-top { display: flex; align-items: center; justify-content: space-between;
+      padding: var(--safe-top) var(--safe-right) 0.5rem var(--safe-left); font-size: 0.62rem; letter-spacing: 0.22em;
+      text-transform: uppercase; color: var(--muted); }
+    .lb-close { appearance: none; background: none; border: 0; font-size: 1.7rem; font-weight: 200; line-height: 1;
+      cursor: pointer; padding: 0.2rem 0.4rem; color: var(--ink); }
+    .lb-track { flex: 1; min-height: 0; display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+      scrollbar-width: none; overscroll-behavior: contain; }
+    .lb-track::-webkit-scrollbar { display: none; }
+    .lb-slide { flex: 0 0 100%; scroll-snap-align: center; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 0 var(--safe-left) var(--safe-bottom); }
+    .lb-slide img { max-width: 100%; max-height: calc(100% - 2.2rem); object-fit: contain; }
+    .lb-title { font-family: var(--serif); letter-spacing: 0.2em; }
 
     @media (min-width: 800px) {
-      #site-title { letter-spacing: 0.18em; }
-
-      model-viewer {
-        top: 5.25rem;
-      }
-
-      .hint {
-        bottom: auto;
-        top: calc(var(--safe-top) + 2.55rem);
-      }
-
-      .specs {
-        flex: 0 1 28rem;
-      }
-
-      .chrome {
-        justify-content: space-between;
-      }
-
-      .spec-body dl {
-        font-size: 0.84rem;
-      }
+      #site-title { letter-spacing: 0.4em; }
+      .subtitle { font-size: 0.85rem; }
+      .thumb, .thumb .frame { width: 5.2rem; } .thumb .frame { height: 5.2rem; }
+      .chrome { justify-content: space-between; }
+      .specs { flex: 0 1 26rem; }
+      .specs[open] { right: auto; width: 26rem; }
+      .spec-body dl { font-size: 0.84rem; }
+      .lb-track { cursor: default; }
     }
   </style>
 </head>
 <body>
   <header>
     <h1 id="site-title">Amy's Ring</h1>
+    <p class="subtitle">18K white gold &middot; 15.68 ct oval</p>
   </header>
 
-  <model-viewer
-    id="viewer"
-    src="./ring.glb"
-    alt="Interactive 3D ring"
-    camera-controls
-    touch-action="pan-y"
-    auto-rotate
-    auto-rotate-delay="2500"
-    rotation-per-second="16deg"
-    interaction-prompt="none"
-    environment-image="neutral"
-    tone-mapping="commerce"
-    shadow-intensity="0.8"
-    shadow-softness="0.95"
-    exposure="1.08"
-    camera-orbit="-40deg 70deg 125%"
-    field-of-view="22deg"
-    min-field-of-view="12deg"
-    max-field-of-view="45deg"
-    interpolation-decay="90"
-    loading="eager"
-  >
-    <div class="progress" slot="progress-bar" id="progress">
+  <main class="stage" id="stage" data-mode="3d">
+    <div id="viewer" aria-label="Interactive 3D ring"></div>
+    <figure class="still" id="still" role="button" tabindex="0" aria-label="Open full screen">
+      <img id="still-img" alt="">
+      <figcaption id="still-cap"></figcaption>
+    </figure>
+    <div class="progress" id="progress">
       <span class="progress-label">Loading</span>
       <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
     </div>
-  </model-viewer>
+    <p class="hint" id="hint">Drag to rotate &middot; pinch to zoom</p>
+  </main>
 
-  <p class="hint" id="hint">Drag to rotate - pinch to zoom</p>
+  <nav class="strip" id="strip" role="tablist" aria-label="Views">
+    <button class="thumb" role="tab" aria-selected="true" data-kind="3d">
+      <span class="frame"><span class="three-d">3D</span></span><span class="label">3D</span>
+    </button>
+    <button class="thumb" role="tab" aria-selected="false" data-kind="image" data-index="0">
+      <span class="frame"><img src="./gallery/front_thumb.webp" alt="" loading="lazy"></span><span class="label">Front view</span>
+    </button>
+    <button class="thumb" role="tab" aria-selected="false" data-kind="image" data-index="1">
+      <span class="frame"><img src="./gallery/top_thumb.webp" alt="" loading="lazy"></span><span class="label">Top view</span>
+    </button>
+    <button class="thumb" role="tab" aria-selected="false" data-kind="image" data-index="2">
+      <span class="frame"><img src="./gallery/on_hand_thumb.webp" alt="" loading="lazy"></span><span class="label">On hand</span>
+    </button>
+  </nav>
 
   <footer class="chrome">
     <details class="specs" id="specs">
@@ -304,71 +182,91 @@
     <button type="button" id="reset">Reset view</button>
   </footer>
 
-  <script>
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Gallery">
+    <div class="lb-top"><span id="lb-count">1 / 3</span><button class="lb-close" id="lb-close" aria-label="Close">&times;</button></div>
+    <div class="lb-track" id="lb-track"></div>
+  </div>
+
+  <script type="module">
+    import { startViewer } from "./viewer.js";
+
     // One easy-to-edit title. Change this string only.
     const SITE_TITLE = "Amy's Ring";
+    const IMAGES = [
+      { src: "./gallery/front.webp", title: "Front view", caption: "" },
+      { src: "./gallery/top.webp", title: "Top view", caption: "" },
+      { src: "./gallery/on_hand.webp", title: "On hand", caption: "Illustration" },
+    ];
 
-    const DEFAULT_FOV = "22deg";
-
-    function defaultOrbit() {
-      return "-40deg 70deg 125%";
-    }
-
-    const titleEl = document.getElementById("site-title");
-    titleEl.textContent = SITE_TITLE;
+    document.getElementById("site-title").textContent = SITE_TITLE;
     document.title = SITE_TITLE;
 
-    const viewer = document.getElementById("viewer");
-    const progress = document.getElementById("progress");
-    const progressFill = document.getElementById("progress-fill");
-    const hint = document.getElementById("hint");
-    const specs = document.getElementById("specs");
+    const $ = (id) => document.getElementById(id);
+    const stage = $("stage"), progress = $("progress"), progressFill = $("progress-fill");
+    const hint = $("hint"), specs = $("specs"), resetBtn = $("reset");
+    let userInteracted = false, current = -1;
 
-    if (window.matchMedia("(min-width: 800px)").matches) {
-      specs.open = true;
-    }
-
-    viewer.cameraOrbit = defaultOrbit();
-
-    viewer.addEventListener("progress", (event) => {
-      const amount = event.detail.totalProgress;
-      progressFill.style.transform = "scaleX(" + amount + ")";
-      if (amount >= 1) {
-        progress.classList.add("is-hidden");
-      }
+    const viewer = startViewer({
+      container: $("viewer"),
+      src: "./ring.glb",
+      onProgress: (a) => { progressFill.style.transform = "scaleX(" + a + ")"; },
+      onLoad: () => progress.classList.add("is-hidden"),
+      onInteract: () => { userInteracted = true; syncHint(); },
     });
-
-    viewer.addEventListener("load", () => {
-      progress.classList.add("is-hidden");
-    });
-
-    let userInteracted = false;
 
     function syncHint() {
       const hideForPanel = window.matchMedia("(max-width: 799px)").matches && specs.open;
       hint.classList.toggle("is-hidden", userInteracted || hideForPanel);
     }
-
-    viewer.addEventListener("camera-change", (event) => {
-      if (event.detail.source === "user-interaction") {
-        userInteracted = true;
-        viewer.autoRotate = false;
-        syncHint();
-      }
-    });
-
-    document.getElementById("reset").addEventListener("click", () => {
-      userInteracted = false;
-      viewer.cameraOrbit = defaultOrbit();
-      viewer.fieldOfView = DEFAULT_FOV;
-      viewer.cameraTarget = "auto auto auto";
-      viewer.jumpCameraToGoal();
-      viewer.autoRotate = true;
-      syncHint();
-    });
-
+    if (window.matchMedia("(min-width: 800px)").matches) specs.open = true;
     specs.addEventListener("toggle", syncHint);
     syncHint();
+
+    resetBtn.addEventListener("click", () => { userInteracted = false; viewer.reset(); syncHint(); });
+
+    // ---- gallery strip
+    const thumbs = [...document.querySelectorAll(".thumb")];
+    function select(btn) {
+      thumbs.forEach((t) => t.setAttribute("aria-selected", String(t === btn)));
+      btn.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+      if (btn.dataset.kind === "3d") {
+        stage.dataset.mode = "3d"; resetBtn.hidden = false; viewer.pause(false); current = -1;
+      } else {
+        current = +btn.dataset.index;
+        const im = IMAGES[current];
+        $("still-img").src = im.src; $("still-img").alt = im.title;
+        $("still-cap").textContent = im.caption;
+        stage.dataset.mode = "image"; resetBtn.hidden = true; viewer.pause(true);
+      }
+    }
+    thumbs.forEach((t) => t.addEventListener("click", () => select(t)));
+
+    // ---- lightbox (swipe between photos, scroll-snap)
+    const lb = $("lightbox"), track = $("lb-track");
+    track.innerHTML = IMAGES.map((im) =>
+      '<figure class="lb-slide"><img src="' + im.src + '" alt="' + im.title + '" loading="lazy">' +
+      '<figcaption class="lb-cap"><span class="lb-title">' + im.title.toUpperCase() + '</span>' +
+      (im.caption ? ' &middot; ' + im.caption : '') + '</figcaption></figure>').join("");
+    function openLb(i) {
+      lb.classList.add("is-open");
+      track.scrollLeft = i * track.clientWidth;
+      $("lb-count").textContent = (i + 1) + " / " + IMAGES.length;
+    }
+    track.addEventListener("scroll", () => {
+      const i = Math.round(track.scrollLeft / track.clientWidth);
+      $("lb-count").textContent = (i + 1) + " / " + IMAGES.length;
+    }, { passive: true });
+    $("still").addEventListener("click", () => openLb(current));
+    $("still").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") openLb(current); });
+    $("lb-close").addEventListener("click", () => lb.classList.remove("is-open"));
+    document.addEventListener("keydown", (e) => {
+      if (!lb.classList.contains("is-open")) return;
+      if (e.key === "Escape") lb.classList.remove("is-open");
+      if (e.key === "ArrowRight") track.scrollBy({ left: track.clientWidth, behavior: "smooth" });
+      if (e.key === "ArrowLeft") track.scrollBy({ left: -track.clientWidth, behavior: "smooth" });
+    });
+    if (location.hash === "#lightbox") openLb(0);
+    const m = location.hash.match(/^#view=(\d)$/); if (m) select(thumbs[+m[1]]);
   </script>
 </body>
 </html>

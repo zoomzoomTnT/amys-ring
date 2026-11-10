@@ -1,0 +1,238 @@
+// Amy's Ring viewer: three.js + ray-traced diamond shader (three-mesh-bvh).
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { MeshBVH, MeshBVHUniformStruct, BVHShaderGLSL } from 'three-mesh-bvh';
+
+// ---------------------------------------------------------------- studio environment
+// Mostly dark room with a few very bright softboxes: dark facets + white flashes.
+function buildStudio(bright = false) {
+  const scene = new THREE.Scene();
+  scene.background = bright ? new THREE.Color(0.13, 0.13, 0.135) : new THREE.Color(0.05, 0.05, 0.055);
+  const box = (w, h, intensity, pos, look, tint = [1, 1, 1]) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(...tint).multiplyScalar(intensity), side: THREE.DoubleSide }));
+    m.position.set(...pos); m.lookAt(...look); scene.add(m);
+  };
+  // big soft overhead + key/fill/rim strips
+  box(6, 6, 6, [0, 7, 0], [0, 0, 0]);
+  box(2.2, 7, 14, [-6, 2.5, 3], [0, 0, 0]);
+  box(2.2, 7, 11, [6, 2.5, 2], [0, 0, 0]);
+  box(8, 1.2, 9, [0, 3, -6], [0, 0, 0]);
+  box(1.0, 5, 18, [2.5, 4, 6], [0, 0, 0]);
+  box(1.0, 5, 16, [-3, 4, -5], [0, 0, 0]);
+  box(3, 3, 4, [0, -6, 0], [0, 0, 0], [0.95, 0.97, 1]);
+  // ring of narrow strips around the horizon: lots of small facet flashes
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 + 0.2, r = 6.5;
+    box(0.6, 3.2, i % 2 ? 7 : 12, [Math.cos(a) * r, 0.6, Math.sin(a) * r], [0, 0, 0]);
+  }
+  // a light gray floor sweep so the band never reflects pure black
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(9, 48), new THREE.MeshBasicMaterial({ color: bright ? new THREE.Color(0.45, 0.45, 0.46) : new THREE.Color(0.18, 0.18, 0.19) }));
+  floor.rotation.x = -Math.PI / 2; floor.position.y = -3.5; scene.add(floor);
+  return scene;
+}
+
+// ---------------------------------------------------------------- diamond material
+function diamondMaterial(bvh, envMap, opts) {
+  const uniforms = {
+    bvh: { value: new MeshBVHUniformStruct() },
+    envMap: { value: envMap },
+    ior: { value: 2.42 },
+    dispersion: { value: opts.dispersion },
+    envIntensity: { value: 1.0 },
+    tint: { value: new THREE.Color(1, 1, 1) },
+    modelInv: { value: new THREE.Matrix4() },
+    modelMat: { value: new THREE.Matrix4() },
+  };
+  uniforms.bvh.value.updateFrom(bvh);
+  const mat = new THREE.ShaderMaterial({
+    uniforms,
+    defines: { BOUNCES: opts.bounces, CHROMA: opts.chroma ? 1 : 0 },
+    vertexShader: /* glsl */`
+      varying vec3 vWorld;
+      void main() {
+        vec4 w = modelMatrix * vec4(position, 1.0);
+        vWorld = w.xyz;
+        gl_Position = projectionMatrix * viewMatrix * w;
+      }`,
+    fragmentShader: /* glsl */`
+      precision highp isampler2D;
+      precision highp usampler2D;
+      ${BVHShaderGLSL.common_functions}
+      ${BVHShaderGLSL.bvh_struct_definitions}
+      ${BVHShaderGLSL.bvh_ray_functions}
+      uniform BVH bvh;
+      uniform samplerCube envMap;
+      uniform float ior, dispersion, envIntensity;
+      uniform vec3 tint;
+      uniform mat4 modelInv;
+      uniform mat4 modelMat;
+      varying vec3 vWorld;
+
+      vec3 env(vec3 d) { return textureLod(envMap, d, 0.0).rgb * envIntensity; }
+      float fresnel(float cosi, float n1, float n2) {
+        float r0 = (n1 - n2) / (n1 + n2); r0 *= r0;
+        return r0 + (1.0 - r0) * pow(1.0 - clamp(cosi, 0.0, 1.0), 5.0);
+      }
+      // trace one wavelength through the stone, return radiance
+      vec3 traceInside(vec3 roL, vec3 rdL, float n) {
+        vec3 acc = vec3(0.0); float thr = 1.0;
+        for (int i = 0; i < BOUNCES; i++) {
+          uvec4 fi; vec3 fn; vec3 bc; float side = 1.0; float dist = 0.0;
+          bool hit = bvhIntersectFirstHit(bvh, roL + rdL * 1e-4, rdL, fi, fn, bc, side, dist);
+          if (!hit) { acc += thr * env(normalize((modelMat * vec4(rdL, 0.0)).xyz)); return acc; }
+          vec3 p = roL + rdL * (dist + 1e-4);
+          vec3 nrm = normalize(fn);
+          if (dot(nrm, rdL) < 0.0) nrm = -nrm;          // outward, along the ray
+          vec3 outD = refract(rdL, -nrm, n);           // diamond -> air
+          float cosi = dot(rdL, nrm);
+          if (dot(outD, outD) < 1e-6) {                 // total internal reflection
+            rdL = reflect(rdL, -nrm); roL = p - nrm * 2e-4; continue;
+          }
+          float F = fresnel(cosi, n, 1.0);
+          acc += thr * (1.0 - F) * env(normalize((modelMat * vec4(outD, 0.0)).xyz));
+          thr *= F;
+          rdL = reflect(rdL, -nrm); roL = p - nrm * 2e-4;
+        }
+        // remaining energy leaves along the last direction
+        acc += thr * env(normalize((modelMat * vec4(rdL, 0.0)).xyz));
+        return acc;
+      }
+      void main() {
+        vec3 n = normalize(cross(dFdx(vWorld), dFdy(vWorld)));   // flat facet normal
+        vec3 v = normalize(vWorld - cameraPosition);
+        if (dot(n, v) > 0.0) n = -n;
+        float cosi = dot(-v, n);
+        float F = fresnel(cosi, 1.0, ior);
+        vec3 refl = env(reflect(v, n));
+        vec3 roL = (modelInv * vec4(vWorld, 1.0)).xyz;
+        vec3 nL = normalize((transpose(mat3(modelInv)) * n));
+        vec3 vL = normalize((modelInv * vec4(v, 0.0)).xyz);
+        vec3 col;
+      #if CHROMA
+        float iorR = ior - dispersion, iorB = ior + dispersion;
+        col.r = traceInside(roL, refract(vL, nL, 1.0 / iorR), iorR).r;
+        col.g = traceInside(roL, refract(vL, nL, 1.0 / ior), ior).g;
+        col.b = traceInside(roL, refract(vL, nL, 1.0 / iorB), iorB).b;
+      #else
+        col = traceInside(roL, refract(vL, nL, 1.0 / ior), ior);
+      #endif
+        col = col * (1.0 - F) * tint + refl * F;
+        gl_FragColor = vec4(col, 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+  });
+  mat.onBeforeRender = (r, s, c, g, obj) => { uniforms.modelMat.value.copy(obj.matrixWorld); uniforms.modelInv.value.copy(obj.matrixWorld).invert(); };
+  return mat;
+}
+
+// ---------------------------------------------------------------- app
+export function startViewer({ container, src, onProgress, onLoad, onInteract }) {
+  const isPhone = Math.min(screen.width, screen.height) < 600;
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isPhone ? 2 : 1.75));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.setClearColor(0x000000, 0);
+  container.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(22, 1, 0.001, 10);
+
+  // environment: sharp cube for the diamonds, PMREM for the metal
+  const studio = buildStudio();
+  const cubeRT = new THREE.WebGLCubeRenderTarget(isPhone ? 256 : 512, { type: THREE.HalfFloatType, generateMipmaps: false });
+  new THREE.CubeCamera(0.1, 50, cubeRT).update(renderer, studio);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const metalEnv = pmrem.fromScene(buildStudio(true), 0.02).texture;
+  scene.environment = metalEnv;
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.08;
+  controls.enablePan = true; controls.screenSpacePanning = true;
+  controls.autoRotate = true; controls.autoRotateSpeed = 16 / 6; // ~16deg/s
+  controls.rotateSpeed = 0.8;
+
+  let home = null, idleTimer = null;
+  controls.addEventListener('start', () => {
+    controls.autoRotate = false; clearTimeout(idleTimer); onInteract && onInteract();
+  });
+
+  // soft contact shadow (cheap radial gradient)
+  const sc = document.createElement('canvas'); sc.width = sc.height = 128;
+  const g = sc.getContext('2d'); const grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grd.addColorStop(0, 'rgba(0,0,0,0.16)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false, toneMapped: false }));
+  shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
+
+  const loader = new GLTFLoader();
+  loader.load(src, (gltf) => {
+    const root = gltf.scene;
+    root.updateMatrixWorld(true);
+    root.traverse((o) => {
+      if (!o.isMesh) return;
+      const name = o.material && o.material.name;
+      if (name === 'Diamond') {
+        o.geometry.deleteAttribute('normal');
+        const bvh = new MeshBVH(o.geometry);
+        const big = /Center|Heart/.test(o.name);
+        const medium = /3\.0mm/.test(o.name);
+        o.material = diamondMaterial(bvh, cubeRT.texture, {
+          bounces: big ? 6 : 4, chroma: big || (medium && !isPhone), dispersion: 0.03,
+        });
+        o.material.uniforms.envIntensity.value = big ? 1.0 : 1.6;
+      } else {
+        o.material = new THREE.MeshPhysicalMaterial({
+          color: new THREE.Color(0.90, 0.90, 0.89), metalness: 1, roughness: 0.075,
+          envMapIntensity: 1.15, clearcoat: 0.3, clearcoatRoughness: 0.03,
+        });
+      }
+    });
+    scene.add(root);
+    const bb = new THREE.Box3().setFromObject(root);
+    const ctr = bb.getCenter(new THREE.Vector3()); const size = bb.getSize(new THREE.Vector3());
+    const radius = size.length() / 2;
+    shadow.position.set(ctr.x, bb.min.y - radius * 0.02, ctr.z);
+    shadow.scale.setScalar(Math.max(size.x, size.z) * 1.15);
+    controls.target.copy(ctr);
+    const dist = radius / Math.sin(THREE.MathUtils.degToRad(22) / 2) * (window.innerWidth > window.innerHeight ? 0.88 : 1.02);
+    // same default framing as before: azimuth -40deg, polar 70deg
+    const th = THREE.MathUtils.degToRad(-40), ph = THREE.MathUtils.degToRad(70);
+    const pos = new THREE.Vector3(Math.sin(ph) * Math.sin(th), Math.cos(ph), Math.sin(ph) * Math.cos(th)).multiplyScalar(dist).add(ctr);
+    home = { pos, target: ctr.clone(), dist };
+    camera.position.copy(pos); camera.near = dist / 50; camera.far = dist * 10; camera.updateProjectionMatrix();
+    controls.minDistance = dist * 0.35; controls.maxDistance = dist * 2.2;
+    controls.update();
+    onLoad && onLoad();
+  }, (e) => { if (e.total) onProgress && onProgress(e.loaded / e.total); }, (err) => console.error(err));
+
+  function resize() {
+    const w = container.clientWidth, h = container.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    // keep the ring fully in frame on tall phones
+    camera.fov = w < h ? 22 * Math.min(1.6, (h / w) * 0.72) : 22;
+    camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(container); resize();
+
+  let running = true;
+  renderer.setAnimationLoop(() => {
+    if (!running) return;
+    controls.update(); renderer.render(scene, camera);
+  });
+
+  return {
+    reset() {
+      if (!home) return;
+      camera.position.copy(home.pos); controls.target.copy(home.target); controls.update();
+      controls.autoRotate = true;
+    },
+    pause(p) { running = !p; },
+  };
+}
