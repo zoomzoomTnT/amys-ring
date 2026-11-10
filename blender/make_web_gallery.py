@@ -1,4 +1,4 @@
-# Compress gallery images for the website: full (WebP, ~1400px) + square thumbs.
+# Compress gallery images for the website: full (WebP, ~1400px).
 import sys, os
 from PIL import Image
 G = '/workspace/ring/gallery'; OUT = sys.argv[1]
@@ -13,6 +13,4 @@ for k, f in src.items():
         p = os.path.join(OUT, k + '.webp'); full.save(p, 'WEBP', quality=q, method=6)
         if os.path.getsize(p) < 400_000: break
     w, h = im.size; s = min(w, h)
-    th = im.crop(((w - s) // 2, (h - s) // 2, (w + s) // 2, (h + s) // 2)).resize((240, 240), Image.LANCZOS)
-    th.save(os.path.join(OUT, k + '_thumb.webp'), 'WEBP', quality=78, method=6)
     print(k, full.size, os.path.getsize(p), 'q', q)
