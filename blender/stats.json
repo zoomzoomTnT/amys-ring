@@ -1,20 +1,20 @@
 {
- "inner_diameter_mm": 16.099,
- "metal_volume_union_mm3": 558.7,
- "metal_volume_sum_parts_mm3": 587.4,
+ "inner_diameter_mm": 16.1,
+ "metal_volume_union_mm3": 558.6,
+ "metal_volume_sum_parts_mm3": 595.9,
  "parts_mm3": {
-  "Shank": 367.08,
-  "GalleryRail": 66.15,
-  "CenterProngs": 31.25,
-  "Arms": 32.25,
-  "HeartRail": 33.82,
-  "HeartProngs": 6.28,
-  "HeartPosts": 3.01,
-  "ShankClaws": 41.54,
-  "PaveBeads": 6.06
+  "Shank": 310.47,
+  "GalleryRail": 101.72,
+  "CenterProngs": 29.39,
+  "Arms": 38.09,
+  "HeartArm": 44.25,
+  "HeartProngs": 13.05,
+  "HeartPosts": 4.69,
+  "ShankClaws": 48.16,
+  "PaveBeads": 6.1
  },
  "est_weight_g_18kw_14_7": 8.21,
- "stl_faces": 484894,
+ "stl_faces": 494609,
  "stone_counts": {
   "round 3.0": 14,
   "round 1.0": 62,
@@ -27,14 +27,11 @@
   "gallery": {
    "nA": 8,
    "nB": 8,
-   "pitchA": 1.414292842379009,
-   "pitchB": 1.3233115620493028,
-   "perimeter": 48.64646166199618
+   "pitchA": 1.5017181459672992,
+   "pitchB": 1.5051655875799244,
+   "perimeter": 52.41637226966099
   },
-  "heart_pitch": [
-   1.4152652400338381,
-   1.391805974299659
-  ]
+  "heart_pitch": 1.5
  },
  "center": {
   "L": 19.22,
@@ -45,6 +42,6 @@
   "girdle": 0.9210500000000001,
   "table_mm": 7.6979999999999995
  },
- "glb_MB": 2.73,
- "tris": 84604
+ "glb_MB": 2.82,
+ "tris": 88902
 }

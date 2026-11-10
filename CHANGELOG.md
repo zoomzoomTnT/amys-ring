@@ -8,3 +8,4 @@ Each design update gets a new version and a matching git tag (`vX.Y`).
 - Details panel with gold weight (≈ 8.2 g) and estimated total weight (≈ 12.2 g).
 - Served over HTTPS at https://amysring.duckdns.org (Caddy + Let's Encrypt).
 - Diamond layout corrected to match the original design (center claws, gallery rail and V pavé arms, tilted heart side stones, 3.0 mm shank stones in claw prongs, side-wall pavé); same stones and 8.2 g gold. Comparison: `renders/compare_v1fix.png`.
+- Front view corrected: hearts set edge-on in straight diagonal pavé arms off a wider flat gallery rail, V pavé under the rail, 3.0 mm shank stones tilted to face the front with radial claw teeth, thicker band bottom; same stones and 8.2 g gold.
