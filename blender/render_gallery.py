@@ -25,8 +25,19 @@ d = dia.node_tree.nodes['Principled BSDF']
 if 'Dispersion' in d.inputs: d.inputs['Dispersion'].default_value = 0.05
 for o in bpy.data.objects:
     if o.type == 'LIGHT': o.data.energy *= 1.3
+from mathutils import Vector, Matrix
+FL = bpy.data.lights.new('Fill', 'AREA'); FL.size = 90; FL.energy = 7e4
+flo = bpy.data.objects.new('Fill', FL); sc.collection.objects.link(flo); flo.visible_camera = False
+def aim(pos):
+    z = pos.normalized(); x = Vector((1, 0, 0)); x = (x - z * x.dot(z)).normalized(); y = z.cross(x)
+    M = Matrix.Identity(4)
+    for i in range(3): M[i][0], M[i][1], M[i][2], M[i][3] = x[i], y[i], z[i], pos[i]
+    return M
 for v in VIEWS:
     sc.camera = bpy.data.objects['Cam_' + v]
+    cm = sc.camera.matrix_world; cpos = cm.translation.copy()
+    up_ = Vector((0, 0, 1)) if abs(cm[2][2]) < 0.9 else Vector((0, 1, 0))
+    flo.matrix_world = aim(cpos + up_ * 60)
     sc.render.filepath = os.path.join(OUT, 'render_%s_%d.png' % (v, RES))
     bpy.ops.render.render(write_still=True)
     print('WROTE', sc.render.filepath, flush=True)

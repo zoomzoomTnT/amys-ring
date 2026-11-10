@@ -6,7 +6,7 @@ Center oval long axis along Y (along the finger); hearts at +/-X on the shoulder
 """
 import bpy, bmesh, math, sys, os, json, time
 from mathutils import Vector, Matrix
-from math import sin, cos, pi, radians, sqrt
+from math import sin, cos, pi, radians, sqrt, atan2
 
 OUT = os.path.dirname(os.path.abspath(__file__))
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
@@ -32,15 +32,32 @@ Z_GT = Z_GB + C_G               # girdle top
 Z_GM = (Z_GB + Z_GT) / 2
 Z_TABLE = Z_GT + C_HC
 C_TABLE_S = 0.60 / cos(pi / 8)
-PRONG_TH = [radians(a) for a in (45, 135, 225, 315)]
+PRONG_TH = [radians(a) for a in (40, 140, 220, 320)]   # claw positions (ellipse parameter), from the top view
 # heart
 H_SIZE, H_HC, H_G, H_HP, H_TS = 6.0, 0.85, 0.24, 2.40, 0.55
-H_TILT = radians(45)          # heart table normal tilted 45 deg outward
-H_PHI = radians(41)           # angular position (from top) of the heart culet on the shoulder hump
-HUMP_H, HUMP_W = 1.20, radians(5.5)
+H_TILT = radians(float(arg('--htilt', 50)))         # lobe->point axis 50 deg from horizontal: lobes up/in at the gallery, point down/out, table faces up-outward
+H_X, H_Z = float(arg('--hx', 8.1)), float(arg('--hz', 10.95))   # heart girdle centre
+H_COUNTS = [4, 4, 3]
+H_WRAP = '--nowrap' not in argv
+H_LOBE_T = float(arg('--lobet', 0.95))   # heart outline parameter of the two lobe prongs
+POST_B = int(arg('--postb', 2))
+TIES = '--ties' in argv
+POST_Y = float(arg('--posty', -1.8))
+TIE_X, TIE_Y = float(arg('--tiex', 1.6)), float(arg('--tiey', 1.6))           # shank claw boundary the heart-point post lands on (2 = ~42 deg)          # 1.4 mm frame stones per heart: side, side, over the lobes
 # shank
-STONE3_START = radians(56)
+SH_T0, SH_T, SH_TB = 2.25, float(arg('--sht', 2.30)), float(arg('--shtb', 1.60))   # radial thickness (top centre, shoulders/sides, bottom)
+SH_W, SH_WB = float(arg('--shw', 1.78)), 1.55      # half width (along the finger)
+STONE3_START = radians(16.5)  # first 3.0 mm stone, 7 per side
 PITCH3 = 3.05
+STONE3_LIFT = float(arg('--lift3', 0.25))   # 3.0 mm girdles sit proud of the metal, held by the claws
+SIDE_SPAN = radians(130)      # 1.0 mm side-wall rows run +/-130 deg over the top
+SIDE_R = 0.95                 # their centre, measured out from the inner surface
+# gallery rail + arms
+RAIL_ZT, RAIL_ZB, RAIL_IN = 14.50, 13.00, 0.35
+ARM_S, ARM_ZT = 0.86, 12.85
+ARM_BX, ARM_BY, ARM_BZ = 0.85, 1.45, 10.05
+ARM_PITCH = 1.36
+ARM_OFF = float(arg('--armoff', -0.60))
 
 # --------------------------------------------------------------------------- mesh builder
 class MB:
@@ -159,6 +176,11 @@ def h_outline(f):
     f = f % H_N; i = int(math.floor(f)); u = f - i
     p, q = H_PTS[i], H_PTS[(i + 1) % H_N]
     return (p[0] + u * (q[0] - p[0]), p[1] + u * (q[1] - p[1]))
+H_LOBE_X = abs(max(H_PTS, key=lambda p: p[1])[0]); H_LOBE_Y = max(p[1] for p in H_PTS)
+def h_hull(f):
+    x, y = h_outline(f)
+    if y > 0 and abs(x) < H_LOBE_X: y = max(y, H_LOBE_Y)
+    return (x, y)
 
 def heart_stone():
     N = H_N; g, hc, hp, st = H_G, H_HC, H_HP, H_TS
@@ -262,11 +284,11 @@ def seat_cutter(info, M, through=None, hole_frac=0.45):
 
 # --------------------------------------------------------------------------- stones registry
 STONES = []          # dicts: kind, D, M (matrix)
-BEADS = MB(); CUTTERS = {}
+BEADS = MB(); CLAWS = MB(); CUTTERS = {}
 STONE_MB = {}
 def add_round(D, center, axis, target, through=None, tangent=None, hole_frac=0.45):
     M = frame(Vector(center), Vector(axis), Vector(tangent) if tangent else Vector((1, 0, 0)))
-    STONES.append(dict(kind='round', D=D, M=M, center=Vector(center), axis=Vector(axis).normalized()))
+    STONES.append(dict(kind='round', D=D, M=M, center=Vector(center), axis=Vector(axis).normalized(), target=target))
     if D not in STONE_MB: STONE_MB[D] = round_brilliant(D)
     if target:
         CUTTERS.setdefault(target, MB()).extend(seat_cutter(STONE_MB[D][1], M, through, hole_frac))
@@ -337,6 +359,38 @@ def materials():
 def clear():
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
+def claw_row(row, rb=0.40, ext=0.75, base=0.55, off_min=0.0, store=None):
+    """Shared claw prongs (short radial posts with round tips) between neighbouring stones and at both row ends."""
+    D = row[0]['D']; info = STONE_MB[D][1]
+    store = store if store is not None else CLAWS
+    pairs = []
+    for i in range(len(row) - 1): pairs.append((row[i]['center'], row[i + 1]['center'], row[i]['axis'] + row[i + 1]['axis']))
+    c0, c1 = row[0]['center'], row[1]['center']; pairs.insert(0, (c0 * 2 - c1, c0, row[0]['axis'] * 2))
+    c0, c1 = row[-1]['center'], row[-2]['center']; pairs.append((c0, c0 * 2 - c1, row[-1]['axis'] * 2))
+    tips = []
+    for (p, q, ax) in pairs:
+        ax = ax.normalized(); m = (p + q) / 2; half = (q - p).length / 2; tg = (q - p).normalized()
+        v = ax.cross(tg).normalized()
+        target = D / 2 + rb * 0.55
+        off = sqrt(max(0.0, target ** 2 - half ** 2)); off = max(off, off_min)
+        for sgn in (-1, 1):
+            c = m + sgn * off * v
+            p0 = c - ax * base; p2 = c + ax * (info['g'] / 2 + ext)
+            store.extend(tube([p0, (p0 + p2) / 2, p2], [rb, rb, rb * 0.92], seg=12, tip=True))
+            tips.append(p2)
+    return tips
+
+def bar(A, B, n, W, T, rr=0.22, k=3):
+    """straight bar A->B with rounded-rectangle section (W across, T along n), capped."""
+    A, B, n = Vector(A), Vector(B), Vector(n).normalized()
+    d = (B - A).normalized(); w = d.cross(n).normalized(); n = w.cross(d).normalized()
+    sec = []
+    for (cx, cy, a0) in ((W / 2 - rr, T / 2 - rr, 0), (-W / 2 + rr, T / 2 - rr, 90), (-W / 2 + rr, -T / 2 + rr, 180), (W / 2 - rr, -T / 2 + rr, 270)):
+        for i in range(k + 1):
+            a = radians(a0 + 90 * i / k); sec.append((cx + rr * cos(a), cy + rr * sin(a)))
+    secs = [[P + x * w + y * n for (x, y) in sec] for P in (A, B)]
+    return loft(secs, closed_v=False, cap=True), d, w, n
+
 def build():
     global COLL
     clear()
@@ -345,19 +399,17 @@ def build():
     COLL = bpy.data.collections.new('Ring'); sc.collection.children.link(COLL)
     GOLD, DIA = materials()
     metal = {}       # name -> MB
+    Z = lambda z: Vector((0, 0, z))
+    for D in (1.0, 1.2, 1.3, 1.4, 3.0): STONE_MB[D] = round_brilliant(D)
 
     # ---------------- shank -------------------------------------------------
     def smooth(x0, x1, x):
         t = min(1, max(0, (x - x0) / (x1 - x0))); return t * t * (3 - 2 * t)
     def thick(phi):
         p = abs(phi)
-        t = 2.05 + (1.75 - 2.05) * smooth(radians(20), radians(42), p)
-        t += HUMP_H * math.exp(-((p - H_PHI) / HUMP_W) ** 2)      # shoulder bridge under the heart
-        return t + (1.50 - 1.75) * smooth(radians(165), pi, p)
+        return SH_T0 + (SH_T - SH_T0) * smooth(radians(4), radians(28), p) + (SH_TB - SH_T) * smooth(radians(128), pi, p)
     def half_w(phi):
-        p = abs(phi)
-        w = 2.05 + (1.80 - 2.05) * smooth(radians(28), radians(45), p)
-        return w + (1.35 - 1.80) * smooth(radians(166), pi, p)
+        return SH_W + (SH_WB - SH_W) * smooth(radians(122), pi, abs(phi))
     def profile(t, w, n=5):
         ro, ri = 0.55, 0.30; pts = []
         corners = [((R_IN + t - ro, w - ro), ro, 0), ((R_IN + ri, w - ri), ri, 90), ((R_IN + ri, -w + ri), ri, 180), ((R_IN + t - ro, -w + ro), ro, 270)]
@@ -372,114 +424,99 @@ def build():
     metal['Shank'] = loft(secs)
     r_out = lambda phi: R_IN + thick(phi)
 
-    # 3.0 mm stones on the outer face (7 per side) + 1.0 mm side-wall pave (14 per wall per side)
-    s3 = round_brilliant(3.0); STONE_MB[3.0] = s3
-    info3 = s3[1]; pitch3 = PITCH3
+    # 3.0 mm stones on the outer face: 7 per side from 16.5 deg, shared claw prongs that stand proud (the 'teeth')
+    tooth_tips = {}
     for side in (1, -1):
         row = []
-        phi = STONE3_START
+        dphi = PITCH3 / (r_out(radians(60)) + STONE3_LIFT)
         for k in range(7):
-            ro = r_out(phi); rg = ro - 0.06
-            dphi = pitch3 / rg
             ph = side * (STONE3_START + k * dphi)
             ax = Vector((sin(ph), 0, cos(ph)))
-            row.append(add_round(3.0, ax * (r_out(ph) - 0.06), ax, 'Shank', through=3.0, tangent=Vector((0, 1, 0))))
-        bead_row(row, rb=0.42)
-        for ysgn in (1, -1):
-            srow = []
-            for k in range(15):
-                p_ = radians(37) + k * radians(128) / 14; ph = side * p_
-                r = R_IN + 0.85 + 0.6 * math.exp(-((p_ - H_PHI) / HUMP_W) ** 2)
-                c = Vector((r * sin(ph), ysgn * (half_w(ph) - 0.05), r * cos(ph)))
-                srow.append(add_round(1.0, c, Vector((0, ysgn, 0)), 'Shank', through=None, hole_frac=0.2, tangent=Vector((sin(ph), 0, cos(ph)))))
-            bead_row(srow, rb=0.17)
-    for ysgn in (1, -1):   # one 1.0 mm stone on each side wall at the top centre, under the head
-        st_ = add_round(1.0, Vector((0, ysgn * (half_w(0) - 0.05), R_IN + 1.0)), Vector((0, ysgn, 0)), 'Shank', through=None, hole_frac=0.2, tangent=Vector((0, 0, 1)))
-        for sg in (1, -1):
-            BEADS.extend(sphere(st_['center'] + Vector((sg * 0.62, ysgn * 0.04, 0)), 0.2, 8, 5))
+            row.append(add_round(3.0, ax * (r_out(ph) + STONE3_LIFT), ax, 'Shank', through=3.0, tangent=Vector((0, 1, 0))))
+        tips = claw_row(row, rb=0.48, ext=0.85, base=0.9, off_min=1.10)
+        tooth_tips[side] = [(tips[2 * i], tips[2 * i + 1]) for i in range(len(tips) // 2)]   # per boundary: (y-, y+)
+    # 1.0 mm stones on both side walls: one continuous row of 31 per wall, over the top, +/-130 deg
+    for ysgn in (1, -1):
+        srow = []
+        for k in range(-15, 16):
+            ph = k * SIDE_SPAN / 15
+            r = R_IN + SIDE_R
+            c = Vector((r * sin(ph), ysgn * (half_w(ph) - 0.05), r * cos(ph)))
+            srow.append(add_round(1.0, c, Vector((0, ysgn, 0)), 'Shank', through=None, hole_frac=0.2, tangent=Vector((sin(ph), 0, cos(ph)))))
+        bead_row(srow, rb=0.17)
     log('shank stones', len(STONES))
 
     # ---------------- center head ------------------------------------------
     a, b = C_A, C_B
     E = lambda th, sx=1, sy=1: Vector((b * sx * cos(th), a * sy * sin(th), 0))
     En = lambda th: Vector((cos(th) / b, sin(th) / a, 0)).normalized()
-    # gallery rail (hidden halo)
-    O_OUT = 0.25; GAP = 0.15; ZT, ZB = Z_GB - 0.12, Z_GB - 1.75
+    # gallery rail: flat channel rail ~1.1 mm below the girdle, 32 x 1.3 mm channel-set on its outer face
+    s_in = (RAIL_ZT - Z_CULET) / C_HP
     secs = []
     for m in range(192):
         th = 2 * pi * m / 192; P = E(th); n = En(th)
-        secs.append([P * (1 - 0.12 / C_HP) + GAP * n + Vector((0, 0, ZT)), P * (1 - 1.75 / C_HP) + GAP * n + Vector((0, 0, ZB)),
-                     P + O_OUT * n + Vector((0, 0, ZB)), P + O_OUT * n + Vector((0, 0, ZT))])
+        outer = P - RAIL_IN * n; inner = P * s_in + 0.12 * n
+        secs.append([inner + Z(RAIL_ZT), inner + Z(RAIL_ZB), outer + Z(RAIL_ZB), outer + Z(RAIL_ZT)])
     metal['GalleryRail'] = loft(secs)
-    # lower basket rail
-    LB, LA, LZ, LHR, LHZ = 3.75, 5.25, 12.0, 0.55, 0.65
-    secs = []
-    for m in range(160):
-        th = 2 * pi * m / 160; P = Vector((LB * cos(th), LA * sin(th), LZ)); n = Vector((cos(th) / LB, sin(th) / LA, 0)).normalized()
-        secs.append([P - LHR * n + Vector((0, 0, LHZ)), P - LHR * n - Vector((0, 0, LHZ)), P + LHR * n - Vector((0, 0, LHZ)), P + LHR * n + Vector((0, 0, LHZ))])
-    metal['LowerRail'] = loft(secs)
-    # base ring under culet
-    BB, BA, BZ = 1.5, 2.2, 10.25
-    metal['BaseRing'] = torus_ellipse(0, 0, BB, BA, BZ, 0.45)
-    # prongs
-    pr = MB()
+    # 4 claw prongs, continuing below the rail as pave arms that run down the pavilion to the shank (the 'V')
+    pr = MB(); arms = MB(); arm_rows = []
     zcrown = lambda s: Z_GT + C_HC * (1 - s) / (1 - C_TABLE_S)
     for th in PRONG_TH:
-        n = En(th); nl = Vector((cos(th) / LB, sin(th) / LA, 0)).normalized()
-        P0 = Vector((BB * cos(th), BA * sin(th), BZ - 0.1))
-        P1 = Vector((LB * cos(th), LA * sin(th), LZ)) + 0.35 * nl
-        P2 = E(th) + (O_OUT + 0.15) * n + Vector((0, 0, Z_GB - 0.95))
-        P3 = E(th) + (0.62 - 0.14) * n + Vector((0, 0, Z_GM))
-        P4 = E(th) + 0.12 * n + Vector((0, 0, Z_GT + 0.48))
-        P5 = E(th, 0.925, 0.925) + Vector((0, 0, zcrown(0.925) + 0.10))
-        pr.extend(tube([P0, P1, P2, P3, P4, P5], [0.55, 0.60, 0.62, 0.62, 0.52, 0.18], seg=14))
-    metal['CenterProngs'] = pr
-    # gallery stones 1.3 mm x 32 and lower rail 1.2 mm x 16
-    def ring_row(curve_fn, axis_fn, D, total, margin, target, through, zrow):
+        n = En(th); P = E(th)
+        sx = 1 if cos(th) > 0 else -1; sy = 1 if sin(th) > 0 else -1
+        A = E(th, ARM_S, ARM_S) + Z(ARM_ZT)
+        B = Vector((ARM_BX * sx, ARM_BY * sy, ARM_BZ))
+        Ptip = E(th, 0.905, 0.905) + Z(zcrown(0.905) + 0.16)
+        P4 = P + 0.22 * n + Z(Z_GT + 0.55)
+        P3 = P + 0.56 * n + Z(Z_GM)
+        P2 = P + 0.40 * n + Z(Z_GB - 0.55)
+        Pr = P - RAIL_IN * n + 0.50 * n + Z((RAIL_ZT + RAIL_ZB) / 2)
+        pr.extend(tube([A + Z(0.25), Pr, P2, P3, P4, Ptip], [0.62, 0.64, 0.68, 0.72, 0.66, 0.50], seg=16))
+        rad = Vector((A.x, A.y, 0)).normalized(); d = (B - A).normalized(); an = (rad - d * rad.dot(d)).normalized()
+        mb_, d, w, an = bar(A - d * 0.3, B, an, 1.45, 1.05)
+        arms.extend(mb_)
+        L = (B - A).length; row = []
+        for k in range(4):
+            t = L / 2 + ARM_OFF + (k - 1.5) * ARM_PITCH
+            c = A + d * t + an * (1.05 / 2 - 0.04)
+            row.append(add_round(1.2, c, an, 'Arms', through=None, hole_frac=0.3, tangent=d))
+        arm_rows.append(row)
+    metal['CenterProngs'] = pr; metal['Arms'] = arms
+    for row in arm_rows: bead_row(row, rb=0.2)
+    def ring_row(curve_fn, axis_fn, D, total, margin, target, through, zrow, beads=True):
         pts, cum = arclen_table(lambda th: curve_fn(th))
         L = cum[-1]
-        ps = [cum[int(round(th / (2 * pi) * 4000))] for th in PRONG_TH]   # 45,135,225,315
-        # segments: [45->135](B: +y end) [135->225](A: -x) [225->315](B) [315->45](A)
+        ps = [cum[int(round(th / (2 * pi) * 4000))] for th in PRONG_TH]
         LBseg = ps[1] - ps[0]; LAseg = (ps[0] + L) - ps[3]
         best = None
         for nA in range(1, total // 2):
             nB = total // 2 - nA
             pA = (LAseg - 2 * margin) / max(1, nA - 1); pB = (LBseg - 2 * margin) / max(1, nB - 1)
-            sc_ = abs(pA - pB) + (100 if min(pA, pB) < D * 1.03 else 0)
+            sc_ = abs(pA - pB) + (100 if min(pA, pB) < D * 1.0 else 0)
             if best is None or sc_ < best[0]: best = (sc_, nA, nB, pA, pB)
         _, nA, nB, pA, pB = best
-        def cv(s):
-            th = th_at(cum, s); return th
-        rows = place_on_curve(cv, ps, [nB, nA, nB, nA], L, margin)
-        allrow = []
+        rows = place_on_curve(lambda s: th_at(cum, s), ps, [nB, nA, nB, nA], L, margin)
         for seg in rows:
             srow = []
             for th in seg:
-                c = curve_fn(th) + Vector((0, 0, 0)); ax = axis_fn(th)
-                srow.append(add_round(D, c - ax * 0.05 + Vector((0, 0, zrow)), ax, target, through=through, tangent=Vector((0, 0, 1))))
-            bead_row(srow, ends=False)
-            allrow += srow
-        return dict(nA=nA, nB=nB, pitchA=pA, pitchB=pB)
-    STONE_MB[1.3] = round_brilliant(1.3); STONE_MB[1.2] = round_brilliant(1.2); STONE_MB[1.0] = round_brilliant(1.0)
-    STONE_MB[1.4] = round_brilliant(1.4)
-    zg = Z_GB - 0.95
-    gal = ring_row(lambda th: E(th) + O_OUT * En(th), En, 1.3, 32, 0.65 + 0.62 + 0.02, 'GalleryRail', 3.0, zg)
-    low = ring_row(lambda th: Vector((LB * cos(th), LA * sin(th), 0)) + LHR * Vector((cos(th) / LB, sin(th) / LA, 0)).normalized(),
-                   lambda th: Vector((cos(th) / LB, sin(th) / LA, 0)).normalized(), 1.2, 16, 0.6 + 0.6 + 0.05, 'LowerRail', 2.0, LZ)
-    log('gallery', gal, 'lower', low)
+                c = curve_fn(th); ax = axis_fn(th)
+                srow.append(add_round(D, c - ax * 0.05 + Vector((0, 0, zrow)), ax, target, through=through, hole_frac=0.3, tangent=Vector((0, 0, 1))))
+                if target == 'GalleryRail':   # the heart frames butt into the rail: cut the same seats through them
+                    CUTTERS.setdefault('HeartRail', MB()).extend(seat_cutter(STONE_MB[D][1], srow[-1]['M'], through, 0.3))
+            if beads: bead_row(srow, ends=False)
+        return dict(nA=nA, nB=nB, pitchA=pA, pitchB=pB, perimeter=L)
+    gal = ring_row(lambda th: E(th) - RAIL_IN * En(th), En, 1.3, 32, 0.64 + 0.65, 'GalleryRail', None, (RAIL_ZT + RAIL_ZB) / 2, beads=False)
+    log('gallery', gal)
 
     # ---------------- hearts (built for +X then mirrored) ------------------
     tau = H_TILT
-    e_u = Vector((cos(tau), 0, -sin(tau)))      # local +y (point -> lobes) maps outward
-    e_v = Vector((0, 1, 0))                      # local +x
-    e_n = Vector((sin(tau), 0, cos(tau)))        # table normal
-    culet = (r_out(H_PHI) + 0.30) * Vector((sin(H_PHI), 0, cos(H_PHI)))
-    H_CENTER = culet + (H_G / 2 + H_HP) * e_n
-    log('heart centre', tuple(round(x, 2) for x in H_CENTER))
+    e_u = Vector((-cos(tau), 0, sin(tau)))      # local +y (point -> lobes): lobes up and in, toward the centre stone
+    e_v = Vector((0, 1, 0))                      # local +x (along the finger)
+    e_n = Vector((sin(tau), 0, cos(tau)))        # table normal: up and outward
+    H_CENTER = Vector((H_X, 0, H_Z))
     HM = Matrix.Identity(4)
     for i in range(3): HM[i][0], HM[i][1], HM[i][2], HM[i][3] = e_v[i], e_u[i], e_n[i], H_CENTER[i]
     def hl(x, y, z): return HM @ Vector((x, y, z))
-    # outline helpers in local plane
     def radial(i):
         q = Vector(h_outline(i)); return q, q.normalized()
     def normal2(i):
@@ -491,21 +528,20 @@ def build():
     HR_OUT, HZT, HZB = 0.30, -H_G / 2 - 0.10, -H_G / 2 - 1.70
     secs = []
     for m in range(H_N * 3):
-        f = m / 3.0; q = Vector(h_outline(f)); r = q.normalized()
-        secs.append([hl(*(q * 0.995), HZT), hl(*(q * 0.62), HZB), hl(*(q + HR_OUT * r), HZB), hl(*(q + HR_OUT * r), HZT)])
+        f = m / 3.0; q = Vector(h_outline(f)); r = q.normalized(); qh = Vector(h_hull(f))
+        secs.append([hl(*(q * 0.995), HZT), hl(*(q * 0.62), HZB), hl(*(qh + HR_OUT * r), HZB), hl(*(qh + HR_OUT * r), HZT)])
     hmetal['HeartRail'] = loft(secs)
     HBZ = -H_G / 2 - H_HP - 0.08
     secs = []
     for m in range(40):
         a_ = 2 * pi * m / 40; P = Vector((1.0 * cos(a_), 1.0 * sin(a_), HBZ)); n = Vector((cos(a_), sin(a_), 0))
         secs.append([HM @ (P + 0.40 * (cos(2 * pi * k / 10) * n + sin(2 * pi * k / 10) * Vector((0, 0, 1)))) for k in range(10)])
-    hmetal['HeartBase'] = loft(secs)
-    # prongs: point + two lobes
+    # (no base ring under the culet: the heart sits in its frame rail)
     iP = H_N // 2
-    tl = [abs(t - 1.1) for t in H_TS_PARAM]; iL1 = tl.index(min(tl))
+    tl = [abs(t - H_LOBE_T) for t in H_TS_PARAM]; iL1 = tl.index(min(tl))
     iL2 = (H_N - iL1) % H_N
     hzc = lambda s: H_G / 2 + H_HC * (1 - s) / (1 - H_TS)
-    hp_ = MB(); prong_idx = sorted([iL1, iP, iL2])
+    hp_ = MB(); prong_idx = sorted([iL1, iP, iL2]) if not H_WRAP else sorted([iL1, iL2])
     for i in prong_idx:
         q, r = radial(i)
         P0 = hl(*(r * 1.0), HBZ)
@@ -513,10 +549,29 @@ def build():
         P2 = hl(*(q + (0.50 - 0.13) * r), 0.0)
         P3 = hl(*(q + 0.06 * r), H_G / 2 + 0.40)
         P4 = hl(*(q * 0.90), hzc(0.90) + 0.09)
-        hp_.extend(tube([P0, P1, P2, P3, P4], [0.45, 0.50, 0.50, 0.42, 0.15], seg=12))
+        hp_.extend(tube([P1, P2, P3, P4], [0.50, 0.50, 0.42, 0.15], seg=12))
     hmetal['HeartProngs'] = hp_
-    # heart rail stones 1.4 mm x 11, arc-length placement on the outer face, skipping prongs
-    curve = lambda f: Vector(h_outline(f)) + HR_OUT * Vector(h_outline(f)).normalized()
+    # supports: V-posts from the heart base and from the heart point down onto the shank claws
+    posts = MB()
+    pt_c = hl(0, POST_Y, HZB + 0.15)
+    tt = tooth_tips[1]
+    bi = POST_B
+    for tip in tt[bi]:
+        tgt = tip - Vector((sin(atan2(tip.x, tip.z)), 0, cos(atan2(tip.x, tip.z)))) * 0.25
+        posts.extend(tube([pt_c, (pt_c + tgt) / 2, tgt], [0.45, 0.42, 0.42], seg=12, tip=False))
+    # heart frame ties into the underside of the gallery rail (the short bars seen in the front view)
+    s_in_ = (RAIL_ZT - Z_CULET) / C_HP
+    for sx_ in ((-1, 1) if TIES else ()):
+        top_c = hl(sx_ * TIE_X, TIE_Y, HZB + 0.15)
+        th_ = math.asin(max(-1, min(1, top_c.y / (C_A * 0.95))))
+        P_ = E(th_); n_ = En(th_)
+        rail_pt = (P_ * s_in_ + 0.12 * n_ + P_ - RAIL_IN * n_) / 2 + Z(RAIL_ZB + 0.15)
+        posts.extend(tube([top_c, (top_c + rail_pt) / 2, rail_pt], [0.42, 0.42, 0.42], seg=12, tip=False))
+    hmetal['HeartPosts'] = posts
+    log('heart centre', tuple(round(x, 2) for x in H_CENTER), 'point-> boundary', bi, 'post start', tuple(round(x, 2) for x in pt_c),
+        'lobe tip', tuple(round(x, 2) for x in hl(0, 3, 0)), 'point', tuple(round(x, 2) for x in hl(0, -3, 0)))
+    # heart frame stones 1.4 mm x 11 per heart on the rail's outer face, skipping prongs
+    curve = lambda f: Vector(h_hull(f)) + HR_OUT * Vector(h_outline(f)).normalized()
     Msub = H_N * 20; cpts = [curve(H_N * i / Msub) for i in range(Msub + 1)]
     cum = [0.0]
     for i in range(1, len(cpts)): cum.append(cum[-1] + (cpts[i] - cpts[i - 1]).length)
@@ -524,15 +579,16 @@ def build():
     def f_at(s):
         s %= Lh; j = max(0, min(len(cum) - 2, next(k for k in range(len(cum) - 1) if cum[k + 1] >= s)))
         u = (s - cum[j]) / max(1e-9, cum[j + 1] - cum[j]); return H_N * (j + u) / Msub
-    ps = [cum[int(i * 20)] for i in prong_idx]          # iL1 < iP < iL2
-    segL = [(ps[(k + 1) % 3] - ps[k]) % Lh for k in range(3)]
-    # segments: L1->P (side), P->L2 (side), L2->L1 (top over cleft)
-    counts = [4, 4, 3]
+    ps = [cum[int(i * 20)] for i in prong_idx]
+    NP = len(prong_idx)
+    segL = [(ps[(k + 1) % NP] - ps[k]) % Lh for k in range(NP)]
+    counts = H_COUNTS if not H_WRAP else [11, 0]
     margin = 0.70 + 0.50 + 0.02
     hstones = []
     zrow = (HZT + HZB) / 2
-    for k in range(3):
+    for k in range(NP):
         sa = ps[k]; L_ = segL[k]; n = counts[k]
+        if n == 0: continue
         a_, b_ = sa + margin, sa + L_ - margin
         srow = []
         for j in range(n):
@@ -541,10 +597,8 @@ def build():
             c = hl(*(q - 0.05 * nn), zrow); ax = (HM.to_3x3() @ Vector((nn.x, nn.y, 0))).normalized()
             srow.append(dict(D=1.4, center=c, axis=ax, f=f))
         hstones.append(srow)
-    hpitch = [(segL[k] - 2 * margin) / max(1, counts[k] - 1) for k in range(3)]
-    log('heart prong idx', prong_idx, 'seg lengths', [round(x, 2) for x in segL], 'pitch', [round(x, 2) for x in hpitch])
-
-    # instantiate heart side stones for both sides
+    hpitch = [(segL[k] - 2 * margin) / max(1, counts[k] - 1) for k in range(NP)]
+    log('heart seg lengths', [round(x, 2) for x in segL], 'pitch', [round(x, 2) for x in hpitch])
     for side in (1, -1):
         mir = (lambda v: Vector((-v.x, v.y, v.z))) if side < 0 else (lambda v: v)
         for srow in hstones:
@@ -552,11 +606,14 @@ def build():
             for s in srow:
                 row.append(add_round(1.4, mir(s['center']), mir(s['axis']), 'HeartRail', through=2.5, tangent=mir(e_n)))
             bead_row(row, ends=False)
-        STONES.append(dict(kind='heart', D=6.0, M=(Matrix.Scale(-1, 4, Vector((1, 0, 0))) @ HM) if side < 0 else HM.copy()))
-    # heart metal: both sides
+        STONES.append(dict(kind='heart', D=6.0, M=(Matrix.Scale(-1, 4, Vector((1, 0, 0))) @ HM) if side < 0 else HM.copy(),
+                           center=mir(H_CENTER), axis=mir(e_n), target='GalleryRail'))
+        # the heart's lobes nest against the gallery rail: notch the rail with a slightly enlarged heart
+        CUTTERS.setdefault('GalleryRail', MB()).extend(heart_stone().xform(STONES[-1]['M'] @ Matrix.Scale(1.04, 4)))
     for k, mb in hmetal.items():
         metal[k] = MB().extend(mb).extend(mb.mirror_x())
-    # CUTTERS for heart rail / bridge were registered in world coords for both sides already
+    metal['ShankClaws'] = CLAWS
+    low = {}
 
     # ---------------- objects ---------------------------------------------
     objs = {}
@@ -589,7 +646,36 @@ def build():
     counts = {}
     for s in STONES: counts['%s %.1f' % (s['kind'], s['D'])] = counts.get('%s %.1f' % (s['kind'], s['D']), 0) + 1
     log('stone counts', counts)
-    return GOLD, DIA, counts, dict(gallery=gal, lower=low, heart_pitch=hpitch)
+    return GOLD, DIA, counts, dict(gallery=gal, heart_pitch=hpitch)
+
+def collision_report():
+    from mathutils.bvhtree import BVHTree
+    tr = lambda mb: BVHTree.FromPolygons([Vector(v) for v in mb.v], mb.f, epsilon=0.0)
+    items = []
+    for s in STONES:
+        mb = STONE_MB[s['D']][0].xform(s['M']) if s['kind'] == 'round' else heart_stone().xform(s['M'])
+        items.append(('r%.1f' % s['D'] if s['kind'] == 'round' else 'heart', s, tr(mb)))
+    items.append(('center', dict(center=Vector((0, 0, Z_GM)), D=19.4), tr(oval_brilliant().xform(Matrix.Translation((0, 0, Z_GM))))))
+    ss = {}
+    for i in range(len(items)):
+        for j in range(i + 1, len(items)):
+            a, b = items[i], items[j]
+            if (a[1]['center'] - b[1]['center']).length > (a[1]['D'] + b[1]['D']) / 2 + 0.6: continue
+            if a[2].overlap(b[2]):
+                k = '/'.join(sorted((a[0], b[0]))); ss[k] = ss.get(k, 0) + 1
+                if '--verbose' in argv: log('  ss', a[0], tuple(round(x, 2) for x in a[1]['center']), b[0], tuple(round(x, 2) for x in b[1]['center']))
+    sm = {}
+    dg = bpy.context.evaluated_depsgraph_get()
+    for o in metal_objects():
+        if o.name in ('PaveBeads', 'ShankClaws', 'CenterProngs', 'HeartProngs'): continue
+        t = BVHTree.FromObject(o, dg)
+        for (name, s, st) in items:
+            if s.get('target') == o.name or (o.name == 'HeartRail' and s.get('target') == 'GalleryRail'): continue
+            if st.overlap(t):
+                k = name + '>' + o.name; sm[k] = sm.get(k, 0) + 1
+                if '--verbose' in argv: log('  sm', name, tuple(round(x, 2) for x in s['center']), o.name)
+    log('COLLISIONS stone-stone', json.dumps(ss)); log('COLLISIONS stone-metal', json.dumps(sm))
+    return ss, sm
 
 # --------------------------------------------------------------------------- measurement
 def metal_objects():
@@ -661,20 +747,20 @@ VIEW_DIRS = {
     'top': (Vector((0, 0, 1)), Vector((0, 1, 0))),
     'front': (Vector((0, -1, 0)), Vector((0, 0, 1))),
     'side': (Vector((1, 0, 0)), Vector((0, 0, 1))),
-    'three_quarter': (Vector((sin(radians(40)) * cos(radians(28)), -cos(radians(40)) * cos(radians(28)), sin(radians(28)))), Vector((0, 0, 1))),
+    'three_quarter': (Vector((0.20, -0.22, 0.955)), Vector((0, 0, 1))),
 }
 def make_camera(view):
     d, up = VIEW_DIRS[view]; d = d.normalized()
-    cam = bpy.data.cameras.new('Cam_' + view); cam.lens = 100; cam.sensor_width = 36; cam.clip_start = 1; cam.clip_end = 2000
+    cam = bpy.data.cameras.new('Cam_' + view); cam.type = 'ORTHO'; cam.clip_start = 1; cam.clip_end = 2000
     ob = bpy.data.objects.new('Cam_' + view, cam); bpy.context.scene.collection.objects.link(ob)
     mn, mx = bbox_world(); ctr = (mn + mx) / 2
     x = up.cross(d).normalized(); y = d.cross(x)
-    k = 18 / 100 / 1.10
-    dist = 0
+    ext = 0
     for i in range(8):
         c = Vector((mn.x if i & 1 else mx.x, mn.y if i & 2 else mx.y, mn.z if i & 4 else mx.z)) - ctr
-        dist = max(dist, max(abs(c.dot(x)), abs(c.dot(y))) / k + c.dot(d))
-    M = Matrix.Identity(4); pos = ctr + d * dist
+        ext = max(ext, abs(c.dot(x)), abs(c.dot(y)))
+    cam.ortho_scale = 2 * ext * 1.08
+    M = Matrix.Identity(4); pos = ctr + d * 200
     for i in range(3): M[i][0], M[i][1], M[i][2], M[i][3] = x[i], y[i], d[i], pos[i]
     ob.matrix_world = M
     return ob
@@ -682,6 +768,8 @@ def make_camera(view):
 # --------------------------------------------------------------------------- main
 def main():
     GOLD, DIA, counts, rowinfo = build()
+    collision_report()
+    if '--checkonly' in argv: return
     scene_setup()
     cams = {v: make_camera(v) for v in VIEW_DIRS}
     bpy.context.scene.camera = cams['three_quarter']
@@ -718,8 +806,13 @@ def main():
         bpy.ops.wm.open_mainfile(filepath=os.path.join(OUT, 'ring.blend'))
         sc = bpy.context.scene
         sc.render.resolution_x = sc.render.resolution_y = RES; sc.cycles.samples = SAMPLES
+        FL = bpy.data.lights.new('Fill', 'AREA'); FL.size = 90; FL.energy = float(arg('--fill', 6e4))
+        flo = bpy.data.objects.new('Fill', FL); sc.collection.objects.link(flo); flo.visible_camera = False
         for v in VIEWS:
             sc.camera = bpy.data.objects['Cam_' + v]
+            cm = sc.camera.matrix_world; cpos = cm.translation; cz = Vector((cm[0][2], cm[1][2], cm[2][2]))
+            up_ = Vector((0, 0, 1)) if abs(cz.z) < 0.9 else Vector((0, 1, 0))
+            flo.matrix_world = frame(cpos + up_ * 60, (cpos + up_ * 60).normalized(), Vector((1, 0, 0)))
             sc.render.filepath = os.path.join(OUT, 'render_%s.png' % v)
             t = time.time(); bpy.ops.render.render(write_still=True); log('rendered', v, '%.0fs' % (time.time() - t))
 
