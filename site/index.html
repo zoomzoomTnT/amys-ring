@@ -212,11 +212,6 @@
     .specs {
       flex: 1;
       min-width: 0;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
     }
 
     .specs summary {
@@ -232,36 +227,55 @@
       justify-content: space-between;
       gap: 0.75rem;
       user-select: none;
+      -webkit-user-select: none;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      -webkit-tap-highlight-color: transparent;
     }
 
     .specs summary::-webkit-details-marker { display: none; }
+    .specs summary::marker { content: ""; }
 
     .specs summary::after {
       content: "▾";
       font-size: 0.85rem;
       line-height: 1;
       color: var(--ink);
-      transform: none;
-      margin: 0;
     }
 
-    .specs[open] summary::after {
-      content: "▴";
-    }
+    .specs[open] summary::after { content: "▴"; }
 
-    .specs summary:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; border-radius: 14px; }
+    .specs summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
+    /* the open panel floats above the bottom row (positioned against .chrome) */
     .spec-body {
-      border-top: 1px solid var(--line);
-      padding: 0.75rem 0.95rem 0.9rem;
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: calc(100% + 0.5rem);
+      max-height: calc(100vh - var(--safe-top) - var(--safe-bottom) - 7.5rem);
+      max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 7.5rem);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      background: rgba(255, 255, 253, 0.94);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 0.85rem 0.95rem 0.95rem;
+      box-shadow: 0 10px 30px rgba(44, 42, 39, 0.10);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
 
     .spec-body dl {
       display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 0.45rem 0.9rem;
+      grid-template-columns: max-content minmax(0, 1fr);
+      gap: 0.55rem 1rem;
       font-size: 0.8rem;
-      line-height: 1.35;
+      line-height: 1.38;
     }
 
     .spec-body dt {
@@ -271,7 +285,43 @@
       white-space: nowrap;
     }
 
-    .spec-body dd { font-weight: 400; }
+    .spec-body dd {
+      font-weight: 400;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .spec-body .note {
+      display: block;
+      margin-top: 0.12rem;
+      font-size: 0.7rem;
+      line-height: 1.35;
+      color: var(--muted);
+    }
+
+    @media (max-width: 359px) {
+      .spec-body dl { grid-template-columns: minmax(0, 1fr); gap: 0.1rem; }
+      .spec-body dd { margin-bottom: 0.45rem; }
+    }
+
+    .notice {
+      position: absolute;
+      left: 50%;
+      top: calc(var(--safe-top) + 2.6rem);
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: calc(100% - 2rem);
+      text-align: center;
+      font-size: 0.72rem;
+      line-height: 1.4;
+      color: var(--muted);
+      z-index: 2;
+    }
+    .notice[hidden] { display: none; }
+    .notice button {
+      appearance: none; background: none; border: 0; padding: 0; font: inherit;
+      color: var(--ink); text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
+    }
 
     .progress {
       position: absolute;
@@ -331,6 +381,10 @@
         flex: 0 1 28rem;
       }
 
+      .spec-body { right: auto; width: min(28rem, 100%); }
+
+      .notice { top: 0.4rem; }
+
       .chrome {
         justify-content: space-between;
       }
@@ -352,6 +406,7 @@
       <img id="still-img" alt="">
       <figcaption class="caption" id="still-cap"></figcaption>
     </figure>
+    <p class="notice" id="notice" role="status" hidden></p>
     <div class="progress" id="progress">
       <span class="progress-label">Loading</span>
       <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
@@ -368,13 +423,13 @@
           <dt>Metal</dt>
           <dd>18K White Gold</dd>
           <dt>Gold weight</dt>
-          <dd>approx. 8.2 g (18K white gold, metal only)</dd>
-          <dt>Est. total weight</dt>
-          <dd>approx. 12.2 g (gold 8.2 g + 20.03 ct diamonds &asymp; 4.0 g)</dd>
+          <dd>approx. 8.2 g<span class="note">18K white gold, metal only</span></dd>
+          <dt>Total weight</dt>
+          <dd>approx. 12.2 g (est.)<span class="note">8.2 g gold + 20.03 ct diamonds (&asymp; 4.0 g)</span></dd>
           <dt>Size</dt>
           <dd>5.5</dd>
           <dt>Center</dt>
-          <dd>15.68 ct lab-grown oval, D color, VVS1, IGI LG843655695</dd>
+          <dd>15.68 ct lab-grown oval<span class="note">D color, VVS1 &middot; IGI LG843655695</span></dd>
           <dt>Accents</dt>
           <dd>approx. 4.35 ct total</dd>
         </dl>
@@ -397,7 +452,6 @@
   </div>
 
   <script type="module">
-    import { startViewer } from "./viewer.js";
 
     // One easy-to-edit title. Change this string only.
     const SITE_TITLE = "Amy's Ring";
@@ -419,19 +473,47 @@
 
     if (window.matchMedia("(min-width: 800px)").matches) specs.open = true;
 
-    const viewer = startViewer({
-      container: $("viewer"),
-      src: "./ring.glb",
-      onProgress: (a) => { progressFill.style.transform = "scaleX(" + a + ")"; },
-      onLoad: () => progress.classList.add("is-hidden"),
-      onInteract: () => { userInteracted = true; syncHint(); },
-    });
+    // The 3D viewer loads separately, so the page (Details, views, photos) always works,
+    // even if the 3D part fails or the device can't run it.
+    let viewer = { reset() {}, pause() {} };
+    let no3d = false, loaded3d = false;
+    const notice = $("notice");
+    function showNotice(html) { notice.innerHTML = html; notice.hidden = false; }
+    function fallbackToPhotos(reason) {
+      if (no3d) return;
+      no3d = true; document.body.classList.add("no-3d");
+      progress.classList.add("is-hidden");
+      const msg = {
+        slow: "The 3D view is taking a while. Showing photos. <button type=button id=retry3d>Try 3D again</button>",
+        load: "The 3D model couldn't load. Showing photos. <button type=button id=retry3d>Try again</button>",
+        script: "The 3D viewer couldn't load. Showing photos. <button type=button id=retry3d>Try again</button>",
+      }[reason] || "3D view isn't available on this device. Showing photos.";
+      showNotice(msg);
+      const r = $("retry3d"); if (r) r.addEventListener("click", () => location.reload());
+      setMode(0);
+    }
+    function start3d() {
+      import("./viewer.js").then(({ startViewer }) => {
+        if (no3d) return;
+        viewer = startViewer({
+          container: $("viewer"),
+          src: "./ring.glb",
+          onProgress: (a) => { progressFill.style.transform = "scaleX(" + a + ")"; },
+          onLoad: () => { loaded3d = true; progressFill.style.transform = "scaleX(1)"; progress.classList.add("is-hidden"); },
+          onInteract: () => { userInteracted = true; syncHint(); },
+          onFail: (reason) => fallbackToPhotos(reason),
+        });
+        if (current >= 0) viewer.pause(true);
+      }).catch((e) => { console.warn("viewer script failed", e); fallbackToPhotos("script"); });
+      // very slow connection: offer photos instead of an endless loading bar
+      setTimeout(() => { if (!loaded3d && !no3d) fallbackToPhotos("slow"); }, 45000);
+    }
 
     function syncHint() {
       const hideForPanel = window.matchMedia("(max-width: 799px)").matches && specs.open;
       hint.classList.toggle("is-hidden", userInteracted || hideForPanel || current >= 0 || !menu.hidden);
     }
-    specs.addEventListener("toggle", syncHint);
+    specs.addEventListener("toggle", () => { if (specs.open) closeMenu(false); syncHint(); });
 
     function setMode(index) {
       current = index;
@@ -449,6 +531,7 @@
 
     // ---- split button + menu
     function openMenu(focusFirst) {
+      if (window.matchMedia("(max-width: 799px)").matches) specs.open = false;
       menu.hidden = false; toggle.setAttribute("aria-expanded", "true"); syncHint();
       if (focusFirst) (items[Math.max(0, current)] || items[0]).focus();
     }
@@ -485,6 +568,7 @@
     $("reset").addEventListener("click", () => {
       closeMenu(false);
       userInteracted = false;
+      if (no3d) { setMode(0); return; }
       setMode(-1);
       viewer.reset();
       syncHint();
@@ -496,14 +580,21 @@
       '<figure class="lb-slide"><img src="' + im.src + '" alt="' + im.title + '" loading="lazy"' +
       (im.render ? ' class="render"' : '') + '><figcaption class="caption">' + im.title +
       (im.caption ? ' &middot; ' + im.caption : '') + '</figcaption></figure>').join("");
+    let lbOpening = false;
     const count = () => {
+      if (lbOpening) return;
       const i = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
       $("lb-count").textContent = (i + 1) + " / " + IMAGES.length;
     };
     function openLb(i) {
       lb.classList.add("is-open");
-      track.scrollLeft = i * track.clientWidth; count();
-      $("lb-close").focus();
+      $("lb-count").textContent = (i + 1) + " / " + IMAGES.length;
+      lbOpening = true;
+      const slide = track.children[i];
+      // jump to the chosen photo once the lightbox has been laid out (Safari needs a frame)
+      const go = () => { track.scrollTo({ left: slide.offsetLeft, behavior: "instant" }); };
+      go(); requestAnimationFrame(() => { go(); requestAnimationFrame(() => { go(); lbOpening = false; }); });
+      $("lb-close").focus({ preventScroll: true });
     }
     function closeLb() { lb.classList.remove("is-open"); $("still").focus(); }
     track.addEventListener("scroll", count, { passive: true });
@@ -528,6 +619,7 @@
     if (location.hash in views) setMode(views[location.hash]);
     if (location.hash === "#menu") openMenu(false);
     syncHint();
+    start3d();
   </script>
 </body>
 </html>

@@ -137,40 +137,77 @@ function diamondMaterial(bvh, envMap, opts) {
 }
 
 // ---------------------------------------------------------------- app
-export function startViewer({ container, src, onProgress, onLoad, onInteract }) {
-  const isPhone = Math.min(screen.width, screen.height) < 600;
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isPhone ? 2 : 1.75));
+// Quality tiers. "full" = desktop; "lite" = phones/iOS (fewer bounces, no fire);
+// "basic" = no ray tracing at all (mirror-facet material) if the shader fails or
+// the device is too slow. If WebGL itself fails, onFail() lets the page fall back
+// to photos.
+const TIERS = {
+  full: { big: 6, small: 4, chroma: true, pr: 1.75, cube: 512 },
+  lite: { big: 4, small: 2, chroma: false, pr: 2, cube: 256 },
+  basic: { big: 0, small: 0, chroma: false, pr: 1.5, cube: 256 },
+};
+
+export function startViewer({ container, src, onProgress, onLoad, onInteract, onFail, onQuality }) {
+  const qs = new URLSearchParams(location.search);
+  // debug/QA flags: ?still (no auto-rotate), ?mask (flat diamond mask), ?q=full|lite|basic, ?fail=webgl|load|shader
+  const STILL = qs.has('still') || qs.has('mask'), MASK = qs.has('mask');
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isPhone = isIOS || Math.min(screen.width, screen.height) < 600 || matchMedia('(pointer: coarse)').matches;
+  let tier = TIERS[qs.get('q')] ? qs.get('q') : (isPhone ? 'lite' : 'full');
+  let failed = false;
+  const fail = (reason, err) => {
+    if (failed) return; failed = true;
+    console.warn('3D viewer unavailable:', reason, err || '');
+    try { renderer && renderer.setAnimationLoop(null); } catch (e) { /* ignore */ }
+    onFail && onFail(reason);
+  };
+
+  let renderer;
+  try {
+    if (qs.get('fail') === 'webgl') throw new Error('forced');
+    const probe = document.createElement('canvas');
+    if (!probe.getContext('webgl2')) throw new Error('WebGL2 not available');
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance', failIfMajorPerformanceCaveat: false });
+  } catch (e) {
+    fail('webgl', e);
+    return { reset() {}, pause() {}, failed: true };
+  }
+  const canvas = renderer.domElement;
+  canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); fail('context-lost'); });
+
+  // shader compile/link problems (e.g. a GPU that can't handle the ray tracer): drop to basic
+  let shaderBroken = qs.get('fail') === 'shader';
+  renderer.debug.onShaderError = (gl, program, vs, fs) => {
+    shaderBroken = true;
+    console.warn('diamond shader failed to compile; using basic material', gl.getProgramInfoLog(program));
+  };
+
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, TIERS[tier].pr));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.setClearColor(0x000000, 0);
-  container.appendChild(renderer.domElement);
+  container.appendChild(canvas);
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(22, 1, 0.001, 10);
 
   // environment: sharp cube for the diamonds, PMREM for the metal
-  const studio = buildStudio();
-  const cubeRT = new THREE.WebGLCubeRenderTarget(isPhone ? 256 : 512, { type: THREE.HalfFloatType, generateMipmaps: false });
-  new THREE.CubeCamera(0.1, 50, cubeRT).update(renderer, studio);
+  const hdrOK = renderer.extensions.has('EXT_color_buffer_half_float') || renderer.extensions.has('EXT_color_buffer_float');
+  const cubeRT = new THREE.WebGLCubeRenderTarget(TIERS[tier].cube, { type: hdrOK ? THREE.HalfFloatType : THREE.UnsignedByteType, generateMipmaps: false });
+  new THREE.CubeCamera(0.1, 50, cubeRT).update(renderer, buildStudio());
   const pmrem = new THREE.PMREMGenerator(renderer);
-  const metalEnv = pmrem.fromScene(buildStudio(true), 0.02).texture;
-  scene.environment = metalEnv;
+  scene.environment = pmrem.fromScene(buildStudio(true), 0.02).texture;
+  pmrem.dispose();
 
-  const controls = new OrbitControls(camera, renderer.domElement);
+  const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true; controls.dampingFactor = 0.08;
   controls.enablePan = true; controls.screenSpacePanning = true;
-  // debug/QA flags: ?still (no auto-rotate), ?mask (flat diamond mask for color measurement)
-  const qs = new URLSearchParams(location.search);
-  const STILL = qs.has('still') || qs.has('mask'), MASK = qs.has('mask');
   controls.autoRotate = !STILL; controls.autoRotateSpeed = 16 / 6; // ~16deg/s
   controls.rotateSpeed = 0.8;
 
-  let home = null, idleTimer = null;
-  controls.addEventListener('start', () => {
-    controls.autoRotate = false; clearTimeout(idleTimer); onInteract && onInteract();
-  });
+  let home = null;
+  controls.addEventListener('start', () => { controls.autoRotate = false; onInteract && onInteract(); });
 
   // soft contact shadow (cheap radial gradient)
   const sc = document.createElement('canvas'); sc.width = sc.height = 128;
@@ -181,8 +218,30 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract }) 
     new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false, toneMapped: false }));
   shadow.rotation.x = -Math.PI / 2; if (!MASK) scene.add(shadow);
 
+  // ---- diamond materials per tier
+  const stones = []; // { mesh, bvh, big }
+  // no ray tracing: flat mirror facets against the brighter (metal) studio, so stones stay white
+  const basicDiamond = new THREE.MeshStandardMaterial({
+    color: 0xffffff, metalness: 1, roughness: 0.02, flatShading: true, envMapIntensity: 2.2,
+  });
+  function applyTier(name) {
+    tier = name; const T = TIERS[name];
+    document.body.dataset.quality = name; onQuality && onQuality(name);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, T.pr)); resize();
+    for (const st of stones) {
+      if (st.mesh.material && st.mesh.material !== basicDiamond) st.mesh.material.dispose();
+      if (name === 'basic') { st.mesh.material = basicDiamond; continue; }
+      if (!st.bvh) st.bvh = new MeshBVH(st.mesh.geometry);
+      const m = diamondMaterial(st.bvh, cubeRT.texture, { bounces: st.big ? T.big : T.small, chroma: st.big && T.chroma, dispersion: 0.02 });
+      m.uniforms.envIntensity.value = st.big ? 1.3 : 1.7;
+      st.mesh.material = m;
+    }
+  }
+
+  const GLB_BYTES = 2754764; // fallback when the server gzips and sends no Content-Length
   const loader = new GLTFLoader();
-  loader.load(src, (gltf) => {
+  const url = qs.get('fail') === 'load' ? src + '.missing' : src;
+  loader.load(url, async (gltf) => {
     const root = gltf.scene;
     root.updateMatrixWorld(true);
     root.traverse((o) => {
@@ -192,13 +251,7 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract }) 
         o.material = new THREE.MeshBasicMaterial({ color: name === 'Diamond' ? 0xff00ff : 0x000000, toneMapped: false });
       } else if (name === 'Diamond') {
         o.geometry.deleteAttribute('normal');
-        const bvh = new MeshBVH(o.geometry);
-        const big = /Center|Heart/.test(o.name);
-        const medium = /3\.0mm/.test(o.name);
-        o.material = diamondMaterial(bvh, cubeRT.texture, {
-          bounces: big ? 6 : 4, chroma: big, dispersion: 0.02,
-        });
-        o.material.uniforms.envIntensity.value = big ? 1.3 : 1.7;
+        stones.push({ mesh: o, bvh: null, big: /Center|Heart/.test(o.name) });
       } else {
         o.material = new THREE.MeshPhysicalMaterial({
           color: new THREE.Color(0.90, 0.90, 0.89), metalness: 1, roughness: 0.075,
@@ -206,6 +259,7 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract }) 
         });
       }
     });
+    try { applyTier(shaderBroken ? 'basic' : tier); } catch (e) { console.warn(e); applyTier('basic'); }
     scene.add(root);
     const bb = new THREE.Box3().setFromObject(root);
     const ctr = bb.getCenter(new THREE.Vector3()); const size = bb.getSize(new THREE.Vector3());
@@ -214,18 +268,30 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract }) 
     shadow.scale.setScalar(Math.max(size.x, size.z) * 1.15);
     controls.target.copy(ctr);
     const dist = radius / Math.sin(THREE.MathUtils.degToRad(22) / 2) * (window.innerWidth > window.innerHeight ? 0.88 : 1.02);
-    // same default framing as before: azimuth -40deg, polar 70deg
+    // default framing: azimuth -40deg, polar 70deg
     const th = THREE.MathUtils.degToRad(-40), ph = THREE.MathUtils.degToRad(70);
     const pos = new THREE.Vector3(Math.sin(ph) * Math.sin(th), Math.cos(ph), Math.sin(ph) * Math.cos(th)).multiplyScalar(dist).add(ctr);
     home = { pos, target: ctr.clone(), dist };
     camera.position.copy(pos); camera.near = dist / 50; camera.far = dist * 10; camera.updateProjectionMatrix();
     controls.minDistance = dist * 0.35; controls.maxDistance = dist * 2.2;
     controls.update();
+    // compile shaders without blocking the page (KHR_parallel_shader_compile where available)
+    try {
+      if (renderer.extensions.has('KHR_parallel_shader_compile')) await renderer.compileAsync(scene, camera);
+      else renderer.compile(scene, camera);
+    } catch (e) { shaderBroken = true; }
+    if (shaderBroken && tier !== 'basic') applyTier('basic');
+    if (failed) return;
+    ready = true;
     onLoad && onLoad();
-  }, (e) => { if (e.total) onProgress && onProgress(e.loaded / e.total); }, (err) => console.error(err));
+  }, (e) => {
+    const total = e.total || GLB_BYTES;
+    onProgress && onProgress(Math.min(0.98, e.loaded / total));
+  }, (err) => fail('load', err));
 
   function resize() {
     const w = container.clientWidth, h = container.clientHeight;
+    if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     // keep the ring fully in frame on tall phones
@@ -234,18 +300,33 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract }) 
   }
   new ResizeObserver(resize).observe(container); resize();
 
-  let running = true;
-  renderer.setAnimationLoop(() => {
-    if (!running) return;
-    controls.update(); renderer.render(scene, camera);
+  // frame-time watchdog: if the device can't keep up, step down a tier (full -> lite -> basic)
+  let ready = false, running = true, frames = [], last = 0, slowChecks = 0;
+  renderer.setAnimationLoop((t) => {
+    if (!running || failed) return;
+    controls.update();
+    renderer.render(scene, camera);
+    if (shaderBroken && tier !== 'basic' && ready) { applyTier('basic'); return; }
+    if (!ready || qs.has('q')) return;
+    if (last) frames.push(t - last);
+    last = t;
+    if (frames.length >= 45) {
+      frames.sort((a, b) => a - b);
+      const med = frames[frames.length >> 1];
+      frames = [];
+      if (med > 55 && tier !== 'basic' && ++slowChecks >= 1) {
+        applyTier(tier === 'full' ? 'lite' : 'basic'); slowChecks = 0;
+      }
+    }
   });
 
   return {
     reset() {
       if (!home) return;
       camera.position.copy(home.pos); controls.target.copy(home.target); controls.update();
-      controls.autoRotate = true;
+      controls.autoRotate = !STILL;
     },
-    pause(p) { running = !p; },
+    pause(p) { running = !p; last = 0; frames = []; },
+    get quality() { return tier; },
   };
 }
