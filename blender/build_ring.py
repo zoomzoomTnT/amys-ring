@@ -13,7 +13,7 @@ argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 # v1.0 round 8 settings (thick half-round U rims with rounded tulip peaks, elliptical U-seats, sideways 3.0 mm stones, flush pave beads, softened metal). Command-line values win (first match).
 TUNED = ('--tilt3 0 --yoff3 0 --sht 2.92 --lift3 -0.57 --u3c 0.57 --u3r 1.45 --u3b 1.0 --u3f 0 --claw3 0 --scr 0 --scl 0.4 '
          '--rimr 0.3 --rimrb 0.2 --rimh 0.2 --rimseg 10 --bzseg 8 --segseat 12 '
-         '--cove3 0.2 --ro 0.5 --ri 0.45 --gd 0.55 --htilt 60 --legsink -0.6 --shtb 2.5 --bezel 0.05 --bezelz 0.0 --envfloor 0.02 --shm 176 --hairpin 1 --sri 0.66 --sro 1.02 --rimin 0.75 --hpst 0.42 --hpsb 0.52 --hprt 10.8').split()
+         '--cove3 0.2 --ro 0.5 --ri 0.45 --gd 0.66 --htilt 60 --legsink -0.6 --shtb 2.5 --bezel 0.05 --bezelz 0.0 --envfloor 0.02 --shm 176 --hairpin 1 --sri 0.66 --sro 1.02 --hpsb 0.62 --hprt 10.75 --hpdw 0.32 --hprho 1.1 --hpwb 0.3 --hpang 7 --hpmaxl 0.35 --hpnb 5 --hpnr 5 --hpwbt 0.3 --hpst 0.5 --hpgr 0.42 --hpgy 0.05 --hpg0 9.8 --hpg1 0.25').split()
 argv = argv + TUNED
 def arg(name, default):
     return argv[argv.index(name) + 1] if name in argv else default
@@ -80,6 +80,9 @@ THRU3 = int(arg('--thru3', 0)); WNORM = int(arg('--wnorm', 1)); LIFT3_FIRST = fl
 HAIRPIN = int(arg('--hairpin', 0))   # round 8: U-prong posts (hairpins) phase-locked to the zigzag: 1.3 at each post, 1.0 under each 3.0 stone
 HP_RC = float(arg('--hprc', 9.62)); HP_RHO = float(arg('--hprho', 1.03)); HP_SB = float(arg('--hpsb', 0.46)); HP_ST = float(arg('--hpst', 0.32)); HP_RT = float(arg('--hprt', 10.85))
 HP_GR = float(arg('--hpgr', 0.17)); HP_G0 = float(arg('--hpg0', 10.02)); HP_RB = float(arg('--hprb', 0.28)); HP_SUB = int(arg('--hpsub', 2))
+HP_ANG = float(arg('--hpang', 5)); HP_MAXL = float(arg('--hpmaxl', 0.18)); HP_NB = int(arg('--hpnb', 6)); HP_NR = int(arg('--hpnr', 6))
+HP_WB = float(arg('--hpwb', 0.36)); HP_H = float(arg('--hph', 0.2)); HP_RO = float(arg('--hpro', 0.3)); HP_DW = float(arg('--hpdw', 0.7)); HP_END = float(arg('--hpend', 0.3))
+HP_GY = float(arg('--hpgy', 0.1)); HP_CR = float(arg('--hpcr', 0.36)); HP_WBT = float(arg('--hpwbt', 0.55)); HP_M0 = float(arg('--hpm0', 9.95)); HP_GD = float(arg('--hpgd', 0.3)); HP_GE = float(arg('--hpge', 0.3)); HP_M1 = float(arg('--hpm1', 10.25)); HP_W0 = float(arg('--hpw0', 10.25)); HP_W1 = float(arg('--hpw1', 10.85)); HP_G1 = float(arg('--hpg1', 0.05))
 ENV_FLOOR = float(arg('--envfloor', 0.30)); ENV_STR = float(arg('--envstr', 1.8))
 SIDE_SPAN = radians(130)      # 1.0 mm side-wall rows run +/-130 deg over the top
 SIDE_R = 0.95                 # their centre, measured out from the inner surface
@@ -648,59 +651,114 @@ def build():
         a0 = math.acos(max(-1, min(1, (HP_RC - rbg) / HP_RHO)))
         def post_pts(j, first=False, last=False):
             out = []
-            asc = [(-HP_RHO * sin(a), rbg + HP_RHO * cos(a)) for a in (a0, (a0 + radians(27)) / 2, radians(27))]
-            asc += [(-(HP_SB * 0.62 + HP_ST * 0.38), (rbg + HP_RHO * cos(radians(27))) * 0.55 + HP_RT * 0.45), (-HP_ST, HP_RT)]
-            tip = [(-HP_ST * cos(radians(a)), HP_RT + HP_ST * sin(radians(a))) for a in (40, 90)]
+            # smooth corner (radius HP_CR) from the cup bottom up into the straight leg, then the leg to the round tip
+            cx_, cr_ = -(HP_SB + HP_CR), HP_RC + HP_CR
+            asc = [(cx_ + HP_CR * cos(radians(th)), cr_ + HP_CR * sin(radians(th))) for th in (270, 292.5, 315, 337.5, 360)]
+            asc += [(-(HP_SB * (1 - u) + HP_ST * u), (HP_RC + HP_CR) * (1 - u) + HP_RT * u) for u in (1 / 3, 2 / 3, 1.0)]
+            tip = [(-HP_ST * cos(radians(a)), HP_RT + HP_ST * sin(radians(a))) for a in (22.5, 45, 67.5, 90)]
             half = asc + tip
             pts_ = half + [(-t, r) for (t, r) in reversed(half[:-1])]
             if first: pts_ = pts_[len(asc) - 1:]          # top-end post: only the strand that runs down into the first cup
             if last: pts_ = pts_[:len(pts_) - len(asc) + 1]
             return [(posts[j] + t / r, r) for (t, r) in pts_]
         def cup_pts(k):
-            return [(phs[k] + t / HP_RC, HP_RC + 0.03 * abs(t) / 0.6) for t in (-0.6, -0.3, 0.0, 0.3, 0.6)]
+            return [(phs[k] + t / HP_RC, HP_RC + 0.02 * (t / 0.5) ** 2 - 0.02) for t in (-0.5, 0.0, 0.5)]
         seq = []
         for j in range(len(row) + 1):
             seq.append(('p', j, post_pts(j, first=(j == 0), last=(j == len(row)))))
             if j < len(row): seq.append(('c', j, cup_pts(j)))
         ctrl = [pr for (_, _, L) in seq for pr in L]
-        P2 = lambda ph, r: (r * sin(ph), r * cos(ph))
-        # notch cutter for each 3.0 stone: the region outside its U (between the two post apexes), through the band width
-        dense, _ = catmull([Vector((x, 0, z)) for (x, z) in (P2(ph, r) for (ph, r) in ctrl)], [0] * len(ctrl), sub=int(arg('--hpcsub', 1)))
-        dpol = [(atan2(v.x, v.z), v.length) for v in dense]
+        # ONE continuous centre-line per side (posts + cups), smoothed and resampled by curvature
+        cpts = [Vector((r * sin(ph), 0, r * cos(ph))) for (ph, r) in ctrl]
+        fine, _ = catmull(cpts, [0] * len(cpts), sub=10)
+        keep = [fine[0]]; acc = 0.0
+        for i in range(1, len(fine) - 1):
+            t0 = fine[i] - fine[i - 1]; t1 = fine[i + 1] - fine[i]
+            if t0.length > 1e-9 and t1.length > 1e-9: acc += t0.angle(t1)
+            if acc > radians(HP_ANG) or (fine[i] - keep[-1]).length > HP_MAXL: keep.append(fine[i]); acc = 0.0
+        keep.append(fine[-1])
+        dpol = [(atan2(v.x, v.z), v.length) for v in keep]
+        # notch cutter: everything outside the centre-line (the cups and the space beyond the post tips), through the band
         hw = SH_W + 0.6
-        poly = list(dpol)
-        f0, f1 = poly[0][0], poly[-1][0]
-        far = [(f1 + (f0 - f1) * i / 24, 13.5) for i in range(25)]
-        poly = poly + far
+        f0, f1 = dpol[0][0], dpol[-1][0]
+        poly = dpol + [(f1 + (f0 - f1) * i / 24, 13.5) for i in range(25)]
         cmb = MB(); n = len(poly)
         A = [cmb.vert((side * r * sin(ph), -hw, r * cos(ph))) for (ph, r) in poly]
         B = [cmb.vert((side * r * sin(ph), hw, r * cos(ph))) for (ph, r) in poly]
         cmb.face(*A); cmb.face(*reversed(B))
         for i in range(n): cmb.face(A[i], A[(i + 1) % n], B[(i + 1) % n], B[i])
         CUTTERS.setdefault('Shank', MB()).extend(cmb)
+        # rim cross-section (b across the path, + = open/cut side; h out of the band face): on the metal side it rises
+        # out of the face with zero slope (no seam), crowns, and rolls over a full round edge down into the cut
+        def make_prof(m):
+            # m = 0: metal side blends flat into the band face (cup bottom); m = 1: metal side is a full round roll too (legs/tip, facing the slot)
+            pr = []
+            for i in range(HP_NB + 1):
+                u = -1 + i / HP_NB; th = radians(90 * (1 + u))           # u=-1 -> outer edge, u=0 -> crown
+                sk = (u * HP_WB, HP_H * (1 - u * u) ** 2)
+                rl = (-HP_RO * sin(radians(90) - th) if False else -HP_RO * cos(radians(90 * (1 + u))) , HP_H - HP_RO + HP_RO * sin(radians(90 * (1 + u))))
+                pr.append((sk[0] * (1 - m) + rl[0] * m, sk[1] * (1 - m) + rl[1] * m))
+            for i in range(1, HP_NR + 1):
+                th = radians(90 * i / HP_NR); pr.append((HP_RO * sin(th), HP_H - HP_RO + HP_RO * cos(th)))
+            pr += [(HP_RO, -HP_DW), (-HP_WB * 0.3 * (1 - m) - HP_RO * m, -HP_DW), (-HP_WB * 0.85 * (1 - m) - HP_RO * m, -0.04 * (1 - m) - HP_DW * 0.5 * m)]
+            return pr
+        PROFS = [make_prof(k / 8) for k in range(9)]
+        Pw = [Vector((side * v.x, 0, v.z)) for v in keep]
+        nP = len(Pw)
+        # which in-plane normal points into the cut: test at the bottom of the first cup (cut side = radially outward)
+        ic = min(range(nP), key=lambda i: abs(dpol[i][0] - phs[0]) + abs(dpol[i][1] - HP_RC))
+        Tc = (Pw[min(ic + 1, nP - 1)] - Pw[max(ic - 1, 0)]).normalized()
+        osgn = 1 if Vector((0, 1, 0)).cross(Tc).dot(Vector((Pw[ic].x, 0, Pw[ic].z)).normalized()) > 0 else -1
+        # taper both free ends to a rounded nose
+        cum = [0.0]
+        for i in range(1, nP): cum.append(cum[-1] + (Pw[i] - Pw[i - 1]).length)
+        Lt = cum[-1]
+        def end_sc(i):
+            e = min(cum[i], Lt - cum[i]); return 1.0 if e >= HP_END else max(0.08, sqrt(max(0.0, 1 - ((HP_END - e) / HP_END) ** 2)))
+        caps = [o for o in STONES if o.get('target') != 'Shank']
         for ys in (-1, 1):
-            def V(ph, r, inset=RIM_R * RIM_IN):
-                return Vector((side * r * sin(ph), ys * (half_w(ph) - inset), r * cos(ph)))
-            path = [V(ph, r) for (ph, r) in ctrl]
-            rads = []
-            for (kind, j, L) in seq:
-                rads += ([HP_RB] * len(L)) if kind == 'c' else ([RIM_R] * len(L))
-            # slot groove down the middle of every U-prong, ending in a round bottom just above its 1.3 stone
-            for j in range(1, len(row)):
-                g = [V(posts[j], r, 0.0) for r in (HP_G0, (HP_G0 + 11.8) / 2, 11.8)]
-                CUTTERS.setdefault('Shank', MB()).extend(tube(g, [HP_GR] * 3, seg=8, smooth=False, tip=True))
-            caps = [o for o in STONES if o.get('target') != 'Shank']
-            for _ in range(2):
-                for ii, pp in enumerate(path):
+            secs = []; scs = [end_sc(i) for i in range(nP)]; shifts = [0.0] * nP
+            def section(i, sc_, sh_):
+                T = (Pw[min(i + 1, nP - 1)] - Pw[max(i - 1, 0)]); T.y = 0; T.normalize()
+                Bv = Vector((0, 1, 0)).cross(T) * osgn
+                ph = atan2(abs(Pw[i].x), Pw[i].z); yf = ys * half_w(ph)
+                rr_ = Vector((Pw[i].x, 0, Pw[i].z)).normalized()
+                base = Pw[i] - rr_ * sh_
+                rI = Pw[i].length; u_ = min(1.0, max(0.0, (rI - HP_W0) / (HP_W1 - HP_W0))); u_ = u_ * u_ * (3 - 2 * u_)
+                wf = 1 + (HP_WBT / HP_WB - 1) * u_      # wider skirt near the tip: the two legs' skirts meet and close the slot smoothly
+                v_ = min(1.0, max(0.0, (rI - HP_M0) / (HP_M1 - HP_M0))); v_ = v_ * v_ * (3 - 2 * v_)
+                prof = PROFS[round(v_ * 8)] if HP_M1 > HP_M0 else PROFS[0]
+                return [base + Bv * (b_ * sc_ * (wf if b_ < 0 else 1.0)) + Vector((0, yf + ys * h_ * sc_, 0)) for (b_, h_) in prof]
+            # dip / thin locally under the heart-arm cap stones
+            for _ in range(6):
+                hit = False
+                for i in range(nP):
+                    sec = section(i, scs[i], shifts[i])
                     for o in caps:
-                        d = (pp - o['center']).length
-                        lim = d - o['D'] / 2 - 0.05
-                        if lim < rads[ii]: rads[ii] = max(0.1, lim)
-                        if lim < 0.1:
-                            rr_ = Vector((pp.x, 0, pp.z)).normalized(); path[ii] = pp - rr_ * (0.15 - lim)
-                rads = [min(rads[ii], (rads[max(ii - 1, 0)] + rads[ii] + rads[min(ii + 1, len(rads) - 1)]) / 3 + 0.04) for ii in range(len(rads))]
-            dp, dr = catmull(path, rads, sub=HP_SUB)
-            RIMS.extend(tube(dp, dr, seg=int(arg('--hpseg', 8)), smooth=False, tip=True))
+                        if (Pw[i] - o['center']).length > o['D'] + 1.5: continue
+                        if min((q - o['center']).length for q in sec) < o['D'] / 2 + 0.05:
+                            hit = True
+                            if scs[i] > 0.45: scs[i] *= 0.85
+                            else: shifts[i] += 0.08
+                if not hit: break
+                scs = [min(scs[i], (scs[max(i - 1, 0)] + scs[i] + scs[min(i + 1, nP - 1)]) / 3 + 0.03) for i in range(nP)]
+                shifts = [max(shifts[i], (shifts[max(i - 1, 0)] + shifts[i] + shifts[min(i + 1, nP - 1)]) / 3 - 0.02) for i in range(nP)]
+            for i in range(nP): secs.append(section(i, scs[i], shifts[i]))
+            RIMS.extend(loft(secs, closed_v=False, cap=True))
+            # smooth rounded slot groove down the middle of every U-prong (hemispherical ends)
+            if HP_GR > 0:
+                # smooth rounded slot down the middle of every U-prong: elliptical section (HP_GR across, HP_GD deep),
+                # tapered to rounded ends; it runs from the round tip down to the 1.3 stone nestled in its open bottom
+                for j in range(1, len(row)):
+                    r0, r1 = HP_G0, HP_RT + HP_G1; ng = 18; E = HP_GE
+                    nrm_y = Vector((0, ys, 0)); secs_g = []
+                    rad_ = Vector((side * sin(posts[j]), 0, cos(posts[j]))); tg_ = Vector((0, 1, 0)).cross(rad_).normalized()
+                    for i in range(ng + 1):
+                        rr = r0 + (r1 - r0) * i / ng; e = min(rr - r0, r1 - rr)
+                        f = 1.0 if e >= E else sqrt(max(0.0, 1 - ((E - e) / E) ** 2)); f = max(f, 0.03)
+                        c = rad_ * rr + Vector((0, ys * (half_w(posts[j]) + HP_GY), 0))
+                        secs_g.append([c + tg_ * (HP_GR * f * cos(2 * pi * k / 16)) + nrm_y * ((HP_GD + HP_GY) * f * sin(2 * pi * k / 16)) for k in range(16)])
+                    CUTTERS.setdefault('Shank', MB()).extend(loft(secs_g, closed_v=False, cap=True))
     ZZ_PH = {}   # zigzag angle per |k| (phase-locked to the 3.0 stones in hairpin mode)
     if HAIRPIN:
         a3 = STONE3_START; d3 = PITCH3 / (r_out(radians(60)) + STONE3_LIFT)
@@ -1073,6 +1131,13 @@ def main():
                  parts_mm3=parts, est_weight_g_18kw_14_7=round(vol * 14.7 / 1000, 2), stl_faces=stl_faces, stone_counts=counts,
                  rows=rowinfo, center=dict(L=C_L, W=C_W, D=C_D, crown=C_HC, pavilion=C_HP, girdle=C_G, table_mm=0.6 * C_W))
     # ---- GLB (meters, true scale)
+    # the web viewer shades diamonds from screen-space facet normals (dFdx/dFdy) and ignores mesh normals, so export
+    # them with shared vertices (smooth) - ~5x fewer GLB vertices; renders above use the flat-shaded blend
+    for o in COLL.objects:
+        if o.type == 'MESH' and o.data.materials and o.data.materials[0].name == 'Diamond':
+            o.data.shade_smooth()
+            try: o.data.set_sharp_from_angle(angle=pi)
+            except Exception: pass
     root = bpy.data.objects.new('RingRoot', None); bpy.context.scene.collection.objects.link(root)
     for o in COLL.objects: o.parent = root
     root.scale = (0.001, 0.001, 0.001)
