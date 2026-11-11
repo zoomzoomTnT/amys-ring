@@ -41,7 +41,8 @@ H_WALL_PITCH = 1.5
 H_Y0, H_Y1 = float(arg('--hy0', -3.3)), float(arg('--hy1', 3.0))
 H_WALL_SHIFT = float(arg('--wshift', -0.7))
 LEG_DEG = float(arg('--legdeg', 46))
-LEG_SINK = float(arg('--legsink', -1.0))
+LEG_DY = float(arg('--legdy', -0.4)); LEG_R = float(arg('--legr', 0.42))
+LEG_SINK = float(arg('--legsink', -0.8))
 H_COUNTS = [4, 4, 3]
 H_WRAP = '--nowrap' not in argv
 H_LOBE_T = float(arg('--lobet', 0.95))   # heart outline parameter of the two lobe prongs
@@ -50,12 +51,16 @@ TIES = '--ties' in argv
 POST_Y = float(arg('--posty', -1.8))
 TIE_X, TIE_Y = float(arg('--tiex', 1.6)), float(arg('--tiey', 1.6))           # shank claw boundary the heart-point post lands on (2 = ~42 deg)          # 1.4 mm frame stones per heart: side, side, over the lobes
 # shank
-SH_T0, SH_T, SH_TB = 2.25, float(arg('--sht', 2.10)), float(arg('--shtb', 1.95))   # radial thickness (top centre, shoulders/sides, bottom)
+SH_T0, SH_T, SH_TB = 2.25, float(arg('--sht', 2.75)), float(arg('--shtb', 1.7))   # radial thickness (top centre, shoulders/sides, bottom)
 SH_W, SH_WB = float(arg('--shw', 1.85)), 1.55      # half width (along the finger)
-STONE3_START = radians(float(arg('--s3start', 21)))  # first 3.0 mm stone, 7 per side
-PITCH3 = 3.05
-STONE3_LIFT = float(arg('--lift3', -0.1))
-STONE3_TILT = radians(float(arg('--tilt3', 60)))   # 3.0 mm tables tilted toward the front face so they read from the front
+STONE3_START = radians(float(arg('--s3start', 20)))  # first 3.0 mm stone, 7 per side
+SH_RO = float(arg('--ro', 0.3))
+TB_START = float(arg('--tbstart', 125))
+GROOVE_W = float(arg('--gw', 1.0)); GROOVE_D = float(arg('--gd', 0.78))
+PITCH3 = float(arg('--pitch3', 3.4))
+SCALLOP = int(arg('--scallop', 1)); SC_R = float(arg('--scr', 0.6)); SC_L = float(arg('--scl', 1.1)); SC_H = float(arg('--sch', 0.0))
+STONE3_LIFT = float(arg('--lift3', -0.2))
+STONE3_TILT = radians(float(arg('--tilt3', 40)))   # 3.0 mm tables tilted toward the front face so they read from the front
 CLAW_EXT = float(arg('--clawext', 0.45))
 STONE3_YOFF = float(arg('--yoff3', -0.4))   # 3.0 mm girdles sit proud of the metal, held by the claws
 TOOTH_L = float(arg('--tooth', 1.4))
@@ -66,7 +71,7 @@ SIDE_SPAN = radians(130)      # 1.0 mm side-wall rows run +/-130 deg over the to
 SIDE_R = 0.95                 # their centre, measured out from the inner surface
 # gallery rail + arms
 RAIL_ZT, RAIL_ZB, RAIL_IN = 14.50, 13.00, float(arg('--railin', -0.25))
-RAIL_DEPTH = float(arg('--raild', 1.5))
+RAIL_DEPTH = float(arg('--raild', 1.0))
 ARM_S, ARM_ZT = float(arg('--arms', 1.0)), 12.85
 ARM_BX, ARM_BY, ARM_BZ = 0.85, 1.45, 10.05
 ARM_PITCH = 1.36
@@ -334,8 +339,8 @@ def cup_for(st, t=None):
     loop = []
     for i in range(9):   # rolled rim, inner -> outer over the top
         a = radians(180 - 180 * i / 8); rr = t / 2
-        loop.append((pav(z0) + 0.08 + rr + rr * cos(a), z0 + rr * sin(a)))
-    loop += [(pav(z1) + 0.08 + t, z1), (pav(z1) + 0.08, z1)]
+        loop.append((pav(z0) + 0.08 + rr * Rg / hp + rr + rr * cos(a), z0 + rr * sin(a)))   # rim clears the shallow pavilion
+    loop += [(pav(z1) + 0.08 + t + rr * Rg / hp, z1), (pav(z1) + 0.08, z1)]
     return revolve_loop(loop, st['M'], seg=CUP_SEG)
 
 
@@ -348,10 +353,10 @@ CUP_SEG = int(arg('--cupseg', 24)); SEG_SEAT = int(arg('--segseat', 16)); BZ_SEG
 ZZ_BIG = float(arg('--zzbig', 1.3))
 RAIL_D = float(arg('--raild_stone', 1.0))
 BEZEL_RM = float(arg('--bezel', 0.12))
-CUP_T = float(arg('--cupt', 0.22))
+CUP_T = float(arg('--cupt', 0))
 CUP_DROP = float(arg('--cupdrop', 0.22))
 COVE3 = float(arg('--cove3', 0.30))
-SIDE_R_IN, SIDE_R_OUT = float(arg('--sri', 0.60)), float(arg('--sro', 1.10))
+SIDE_R_IN, SIDE_R_OUT = float(arg('--sri', 0.55)), float(arg('--sro', 0.98))
 def add_round(D, center, axis, target, through=None, tangent=None, hole_frac=0.45, cove=0.0, cove_z=0.0):
     M = frame(Vector(center), Vector(axis), Vector(tangent) if tangent else Vector((1, 0, 0)))
     STONES.append(dict(kind='round', D=D, M=M, center=Vector(center), axis=Vector(axis).normalized(), target=target))
@@ -453,6 +458,26 @@ def claw_row(row, rb=0.40, ext=0.75, base=0.55, off_min=0.0, store=None, tooth=0
             store.extend(tube([A, (A + B) / 2, B], [TOOTH_R, TOOTH_R, TOOTH_R * 0.85], seg=12, tip=True))
     return tips
 
+def scallop_row(row, store=None):
+    """Shared rounded beads between neighbouring big stones: a short broad capsule lying across the band
+    (front to back) at girdle height, on a wide rounded foot that flows into the band. No radial spikes."""
+    D = row[0]['D']; info = STONE_MB[D][1]
+    store = store if store is not None else CLAWS
+    pairs = []
+    for i in range(len(row) - 1): pairs.append((row[i]['center'], row[i + 1]['center'], row[i]['axis'] + row[i + 1]['axis']))
+    c0, c1 = row[0]['center'], row[1]['center']; pairs.insert(0, (c0 * 2 - c1, c0, row[0]['axis'] * 2))
+    c0, c1 = row[-1]['center'], row[-2]['center']; pairs.append((c0, c0 * 2 - c1, row[-1]['axis'] * 2))
+    tips = []
+    for (p, q, ax) in pairs:
+        ax = ax.normalized(); m = (p + q) / 2; tg = (q - p).normalized()
+        v = ax.cross(tg).normalized()
+        top = m + ax * (info['g'] / 2 + SC_H)
+        A = top - v * SC_L; B = top + v * SC_L
+        store.extend(tube([A, top, B], [SC_R * 0.85, SC_R, SC_R * 0.85], seg=12, tip=True))
+        store.extend(tube([m - ax * 1.1, m - ax * 0.45, top], [SC_R * 1.6, SC_R * 1.3, SC_R], seg=12, tip=False))
+        tips.extend([A, B])
+    return tips
+
 def bar(A, B, n, W, T, rr=0.22, k=3):
     """straight bar A->B with rounded-rectangle section (W across, T along n), capped."""
     A, B, n = Vector(A), Vector(B), Vector(n).normalized()
@@ -480,15 +505,20 @@ def build():
         t = min(1, max(0, (x - x0) / (x1 - x0))); return t * t * (3 - 2 * t)
     def thick(phi):
         p = abs(phi)
-        return SH_T0 + (SH_T - SH_T0) * smooth(radians(4), radians(28), p) + (SH_TB - SH_T) * smooth(radians(128), pi, p)
+        return SH_T0 + (SH_T - SH_T0) * smooth(radians(4), radians(28), p) + (SH_TB - SH_T) * smooth(radians(TB_START), pi, p)
     def half_w(phi):
         return SH_W + (SH_WB - SH_W) * smooth(radians(122), pi, abs(phi))
     def profile(t, w, n=5):
-        ro, ri = 0.55, 0.30; pts = []
+        ro, ri = SH_RO, 0.30; pts = []
         corners = [((R_IN + t - ro, w - ro), ro, 0), ((R_IN + ri, w - ri), ri, 90), ((R_IN + ri, -w + ri), ri, 180), ((R_IN + t - ro, -w + ro), ro, 270)]
-        for (c, r, a0) in corners:
+        for ci, (c, r, a0) in enumerate(corners):
             for k in range(n):
                 a = radians(a0 + 90 * k / (n - 1)); pts.append((c[0] + r * cos(a), c[1] + r * sin(a)))
+            if ci == 1:
+                # comfort / lightening channel in the inner bore (the finger still bears on both inner rims, so size is unchanged)
+                gw = min(GROOVE_W, w - ri - 0.25); gd = GROOVE_D
+                for (yy, dd) in ((gw, 0.0), (gw - 0.18, gd * 0.75), (gw - 0.45, gd), (-gw + 0.45, gd), (-gw + 0.18, gd * 0.75), (-gw, 0.0)):
+                    pts.append((R_IN + dd, yy))
         return pts
     secs = []; M = 360
     for m in range(M):
@@ -507,8 +537,8 @@ def build():
             rad = Vector((sin(ph), 0, cos(ph)))
             ax = (rad * cos(STONE3_TILT) - Vector((0, 1, 0)) * sin(STONE3_TILT)).normalized()
             row.append(add_round(3.0, rad * (r_out(ph) + STONE3_LIFT) + Vector((0, STONE3_YOFF, 0)), ax, 'Shank', through=3.0, tangent=Vector((0, 1, 0)), cove=COVE3, cove_z=-0.05))
-            CUPS.extend(cup_for(row[-1]))
-        tips = claw_row(row, rb=0.44, ext=CLAW_EXT, base=0.9, off_min=1.10, tooth=TOOTH_L)
+            if CUP_T > 0: CUPS.extend(cup_for(row[-1]))
+        tips = scallop_row(row) if SCALLOP else claw_row(row, rb=0.44, ext=CLAW_EXT, base=0.9, off_min=1.10, tooth=TOOTH_L)
         tooth_tips[side] = [(tips[2 * i], tips[2 * i + 1]) for i in range(len(tips) // 2)]   # per boundary: (y-, y+)
     # 1.0 mm stones on both side walls: one continuous row of 31 per wall, over the top, +/-130 deg
     for ysgn in (1, -1):
@@ -633,9 +663,9 @@ def build():
     tt = tooth_tips[1]
     ang = lambda P: atan2(P.x, P.z)
     bi = min(range(len(tt)), key=lambda i: abs(ang((tt[i][0] + tt[i][1]) / 2) - radians(LEG_DEG)))
-    for tip in tt[bi]:
-        tgt = tip - Vector((sin(ang(tip)), 0, cos(ang(tip)))) * LEG_SINK
-        posts.extend(tube([leg_c, (leg_c + tgt) / 2, tgt], [0.50, 0.46, 0.46], seg=12, tip=False))
+    for tip in (tt[bi] if not SCALLOP else [min(tt[bi], key=lambda P: P.y)]):
+        tgt = tip - Vector((sin(ang(tip)), 0, cos(ang(tip)))) * LEG_SINK + Vector((0, LEG_DY, 0))
+        posts.extend(tube([leg_c, (leg_c + tgt) / 2, tgt], [LEG_R, LEG_R * 0.92, LEG_R * 0.92], seg=12, tip=False))
     hmetal['HeartPosts'] = posts
     log('heart centre', tuple(round(x, 2) for x in H_CENTER), 'lobe tip', tuple(round(x, 2) for x in hl(0, 3, 0)),
         'point', tuple(round(x, 2) for x in hl(0, -3, 0)), 'outer cap', tuple(round(x, 2) for x in hl(0, Y0 - 0.9, 0)), 'leg->boundary', bi,
