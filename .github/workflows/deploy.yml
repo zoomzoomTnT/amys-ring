@@ -1,0 +1,48 @@
+name: CI/CD - deploy site
+
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", ".github/workflows/deploy.yml"]
+  workflow_dispatch:
+
+concurrency: deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the site files are there
+        run: |
+          for f in index.html viewer.js ring.glb gallery/front.webp gallery/top.webp gallery/on_hand.webp; do
+            test -s "site/$f" || { echo "Missing site/$f"; exit 1; }
+          done
+
+      - name: Set up SSH key
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "${{ secrets.SERVER_PK }}" > ~/.ssh/id
+          chmod 600 ~/.ssh/id
+          ssh-keyscan -H "${{ secrets.SERVER_IP }}" >> ~/.ssh/known_hosts
+
+      - name: Copy site/ to /opt/amys-ring/site
+        # The Caddy container bind-mounts that folder, so files are updated in place
+        # (not by swapping the directory), and files removed from the repo are removed there too.
+        run: |
+          tar czf - -C site . | ssh -i ~/.ssh/id "${{ secrets.SERVER_UN }}@${{ secrets.SERVER_IP }}" '
+            set -e
+            cd /opt/amys-ring
+            rm -rf site.new && mkdir site.new
+            tar xzf - -C site.new
+            cp -a site.new/. site/
+            (cd site && find . -type f | while read -r f; do [ -e "../site.new/$f" ] || rm -f "$f"; done)
+            rm -rf site.new
+          '
+
+      - name: Check the live site
+        run: |
+          curl -fsS -o /dev/null https://amysring.duckdns.org/
+          curl -fsS -o /dev/null https://amysring.duckdns.org/ring.glb
+          echo "Live site OK"
