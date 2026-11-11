@@ -8,7 +8,7 @@ import { MeshBVH, MeshBVHUniformStruct, BVHShaderGLSL } from 'three-mesh-bvh';
 // Mostly dark room with a few very bright softboxes: dark facets + white flashes.
 function buildStudio(bright = false) {
   const scene = new THREE.Scene();
-  scene.background = bright ? new THREE.Color(0.13, 0.13, 0.13) : new THREE.Color(0.05, 0.05, 0.05);
+  scene.background = bright ? new THREE.Color(0.22, 0.22, 0.22) : new THREE.Color(0.05, 0.05, 0.05);
   const box = (w, h, intensity, pos, look, tint = [1, 1, 1]) => {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h),
       new THREE.MeshBasicMaterial({ color: new THREE.Color(...tint).multiplyScalar(intensity), side: THREE.DoubleSide }));
@@ -238,7 +238,7 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract, on
     }
   }
 
-  const GLB_BYTES = 2754764; // fallback when the server gzips and sends no Content-Length
+  const GLB_BYTES = 3403548; // fallback when the server gzips and sends no Content-Length
   const loader = new GLTFLoader();
   const url = qs.get('fail') === 'load' ? src + '.missing' : src;
   loader.load(url, async (gltf) => {
@@ -254,8 +254,9 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract, on
         stones.push({ mesh: o, bvh: null, big: /Center|Heart/.test(o.name) });
       } else {
         o.material = new THREE.MeshPhysicalMaterial({
-          color: new THREE.Color(0.90, 0.90, 0.89), metalness: 1, roughness: 0.075,
-          envMapIntensity: 1.15, clearcoat: 0.3, clearcoatRoughness: 0.03,
+          // bright polished 18K white gold: high albedo, slightly soft highlights so it never mirrors black
+          color: new THREE.Color(0.93, 0.93, 0.92), metalness: 1, roughness: 0.12,
+          envMapIntensity: 1.6, clearcoat: 0.3, clearcoatRoughness: 0.04,
         });
       }
     });
