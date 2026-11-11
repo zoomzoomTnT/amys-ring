@@ -66,7 +66,7 @@ SIDE_SPAN = radians(130)      # 1.0 mm side-wall rows run +/-130 deg over the to
 SIDE_R = 0.95                 # their centre, measured out from the inner surface
 # gallery rail + arms
 RAIL_ZT, RAIL_ZB, RAIL_IN = 14.50, 13.00, float(arg('--railin', -0.25))
-RAIL_DEPTH = float(arg('--raild', 1.6))
+RAIL_DEPTH = float(arg('--raild', 1.5))
 ARM_S, ARM_ZT = float(arg('--arms', 1.0)), 12.85
 ARM_BX, ARM_BY, ARM_BZ = 0.85, 1.45, 10.05
 ARM_PITCH = 1.36
@@ -286,25 +286,75 @@ def revolve(profile, M, seg=16):
             else: mb.face(A[k], B[k], B[(k + 1) % seg], A[(k + 1) % seg])
     return mb.xform(M)
 
-def seat_cutter(info, M, through=None, hole_frac=0.45):
+def seat_cutter(info, M, through=None, hole_frac=0.45, cove=0.0, cove_z=0.0):
     Rg = info['D'] / 2; g = info['g']; hp = info['hp']
     hr = Rg * hole_frac
     # bore = girdle diameter + 0.02 mm; seat cone slightly narrower than the pavilion so the stone rests on it
-    prof = [(0, 3.0), (Rg + 0.01, 3.0), (Rg + 0.01, -g / 2), (Rg * 0.96, -g / 2 - 0.01), (hr, -g / 2 - hp * (1 - hr / Rg))]
+    if cove > 0:
+        # rounded cove: the metal rolls smoothly into the seat (scalloped cup edge instead of a sharp drilled hole)
+        prof = [(0, 3.0), (Rg + 0.01 + cove, 3.0)]
+        for i in range(9):
+            a = radians(90 + 90 * i / 8); prof.append((Rg + 0.01 + cove + cove * cos(a), cove_z + cove * sin(a)))
+        prof += [(Rg + 0.01, -g / 2), (Rg * 0.96, -g / 2 - 0.01), (hr, -g / 2 - hp * (1 - hr / Rg))]
+    else:
+        prof = [(0, 3.0), (Rg + 0.01, 3.0), (Rg + 0.01, -g / 2), (Rg * 0.96, -g / 2 - 0.01), (hr, -g / 2 - hp * (1 - hr / Rg))]
     if through: prof += [(hr, -through), (0, -through)]
     else: prof += [(0, -g / 2 - hp - 0.1)]
-    return revolve(prof, M)
+    return revolve(prof, M, seg=24)
+
+def revolve_loop(loop, M, seg=24):
+    """closed (r, h) loop revolved around local z -> closed ring solid"""
+    mb = MB(); rows = [[mb.vert((r * cos(2 * pi * k / seg), r * sin(2 * pi * k / seg), h)) for k in range(seg)] for (r, h) in loop]
+    n = len(rows)
+    for i in range(n):
+        A, B = rows[i], rows[(i + 1) % n]
+        for k in range(seg): mb.face(A[k], B[k], B[(k + 1) % seg], A[(k + 1) % seg])
+    return mb.xform(M)
+
+def bezel_row(row, closed=False, z=0.05):
+    """smooth rounded bezel rim (half-torus lip) around every stone: the soft cup the stone sits in"""
+    for i, st in enumerate(row):
+        D = st['D']; Rg = D / 2
+        gap = 9.0
+        for j, o in enumerate(row):
+            if j != i: gap = min(gap, (o['center'] - st['center']).length - D / 2 - o['D'] / 2)
+        for o in STONES:
+            if o is not st and o['kind'] == 'round' and (o['center'] - st['center']).length < D + o['D']:
+                gap = min(gap, (o['center'] - st['center']).length - D / 2 - o['D'] / 2)
+        rm = max(0.06, min(BEZEL_RM, gap - 0.05))
+        loop = [(Rg + 0.02 + rm * cos(2 * pi * k / 12), z + rm * sin(2 * pi * k / 12)) for k in range(12)]
+        BEZELS.extend(revolve_loop(loop, st['M'], seg=24))
+
+def cup_for(st, t=None):
+    """rounded scallop cup under a big stone's girdle (follows the pavilion, rolled rim)"""
+    info = STONE_MB[st['D']][1]; Rg = st['D'] / 2; g = info['g']; hp = info['hp']
+    t = t or CUP_T
+    pav = lambda z: Rg * (1 - (-g / 2 - z) / hp)
+    z0 = -g / 2 - CUP_DROP; z1 = -g / 2 - hp * 0.68
+    loop = []
+    for i in range(9):   # rolled rim, inner -> outer over the top
+        a = radians(180 - 180 * i / 8); rr = t / 2
+        loop.append((pav(z0) + 0.08 + rr + rr * cos(a), z0 + rr * sin(a)))
+    loop += [(pav(z1) + 0.08 + t, z1), (pav(z1) + 0.08, z1)]
+    return revolve_loop(loop, st['M'], seg=28)
+
 
 # --------------------------------------------------------------------------- stones registry
 STONES = []          # dicts: kind, D, M (matrix)
 BEADS = MB(); CLAWS = MB(); CUTTERS = {}
 STONE_MB = {}
-def add_round(D, center, axis, target, through=None, tangent=None, hole_frac=0.45):
+BEZELS = MB(); CUPS = MB(); BEZEL_ROWS = []
+BEZEL_RM = float(arg('--bezel', 0.12))
+CUP_T = float(arg('--cupt', 0.22))
+CUP_DROP = float(arg('--cupdrop', 0.22))
+COVE3 = float(arg('--cove3', 0.30))
+SIDE_R_IN, SIDE_R_OUT = float(arg('--sri', 0.58)), float(arg('--sro', 1.10))
+def add_round(D, center, axis, target, through=None, tangent=None, hole_frac=0.45, cove=0.0, cove_z=0.0):
     M = frame(Vector(center), Vector(axis), Vector(tangent) if tangent else Vector((1, 0, 0)))
     STONES.append(dict(kind='round', D=D, M=M, center=Vector(center), axis=Vector(axis).normalized(), target=target))
     if D not in STONE_MB: STONE_MB[D] = round_brilliant(D)
     if target:
-        CUTTERS.setdefault(target, MB()).extend(seat_cutter(STONE_MB[D][1], M, through, hole_frac))
+        CUTTERS.setdefault(target, MB()).extend(seat_cutter(STONE_MB[D][1], M, through, hole_frac, cove, cove_z))
     return STONES[-1]
 
 def bead_row(row, closed=False, rb=None, ends=True):
@@ -453,7 +503,8 @@ def build():
             ph = side * (STONE3_START + k * dphi)
             rad = Vector((sin(ph), 0, cos(ph)))
             ax = (rad * cos(STONE3_TILT) - Vector((0, 1, 0)) * sin(STONE3_TILT)).normalized()
-            row.append(add_round(3.0, rad * (r_out(ph) + STONE3_LIFT) + Vector((0, STONE3_YOFF, 0)), ax, 'Shank', through=3.0, tangent=Vector((0, 1, 0))))
+            row.append(add_round(3.0, rad * (r_out(ph) + STONE3_LIFT) + Vector((0, STONE3_YOFF, 0)), ax, 'Shank', through=3.0, tangent=Vector((0, 1, 0)), cove=COVE3, cove_z=-0.05))
+            CUPS.extend(cup_for(row[-1]))
         tips = claw_row(row, rb=0.44, ext=CLAW_EXT, base=0.9, off_min=1.10, tooth=TOOTH_L)
         tooth_tips[side] = [(tips[2 * i], tips[2 * i + 1]) for i in range(len(tips) // 2)]   # per boundary: (y-, y+)
     # 1.0 mm stones on both side walls: one continuous row of 31 per wall, over the top, +/-130 deg
@@ -461,10 +512,10 @@ def build():
         srow = []
         for k in range(-15, 16):
             ph = k * SIDE_SPAN / 15
-            r = R_IN + SIDE_R
+            r = R_IN + (SIDE_R_OUT if k % 2 == 0 else SIDE_R_IN)     # staggered zigzag: alternate outer / inner row
             c = Vector((r * sin(ph), ysgn * (half_w(ph) - 0.05), r * cos(ph)))
             srow.append(add_round(1.0, c, Vector((0, ysgn, 0)), 'Shank', through=None, hole_frac=0.2, tangent=Vector((sin(ph), 0, cos(ph)))))
-        bead_row(srow, rb=0.17)
+        BEZEL_ROWS.append(srow)
     log('shank stones', len(STONES))
 
     # ---------------- center head ------------------------------------------
@@ -504,7 +555,7 @@ def build():
             row.append(add_round(1.2, c, an, 'Arms', through=None, hole_frac=0.3, tangent=d))
         arm_rows.append(row)
     metal['CenterProngs'] = pr; metal['Arms'] = arms
-    for row in arm_rows: bead_row(row, rb=0.2)
+    for row in arm_rows: BEZEL_ROWS.append(row)
     def ring_row(curve_fn, axis_fn, D, total, margin, target, through, zrow, beads=True):
         pts, cum = arclen_table(lambda th: curve_fn(th))
         L = cum[-1]
@@ -525,7 +576,7 @@ def build():
                 srow.append(add_round(D, c - ax * 0.05 + Vector((0, 0, zrow)), ax, target, through=through, hole_frac=0.3, tangent=Vector((0, 0, 1))))
                 if target == 'GalleryRail':   # the heart frames butt into the rail: cut the same seats through them
                     CUTTERS.setdefault('HeartArm', MB()).extend(seat_cutter(STONE_MB[D][1], srow[-1]['M'], through, 0.3))
-            if beads: bead_row(srow, ends=False)
+            BEZEL_ROWS.append(srow)
         return dict(nA=nA, nB=nB, pitchA=pA, pitchB=pB, perimeter=L)
     gal = ring_row(lambda th: E(th) - RAIL_IN * En(th), En, 1.3, 32, 0.64 + 0.65, 'GalleryRail', None, (RAIL_ZT + RAIL_ZB) / 2, beads=False)
     log('gallery', gal)
@@ -602,13 +653,15 @@ def build():
             if key != 0: CUTTERS.setdefault('GalleryRail', MB()).extend(seat_cutter(STONE_MB[1.4][1], st['M'], None, 0.3))   # arm walls butt into the rail
             rows.setdefault(key, []).append(st)
         for key, row in rows.items():
-            if len(row) > 1: bead_row(row, ends=True, rb=0.2)
+            BEZEL_ROWS.append(row)
         STONES.append(dict(kind='heart', D=6.0, M=(Matrix.Scale(-1, 4, Vector((1, 0, 0))) @ HM) if side < 0 else HM.copy(),
                            center=mir(H_CENTER), axis=mir(e_n), target='GalleryRail'))
         CUTTERS.setdefault('GalleryRail', MB()).extend(heart_stone().xform(STONES[-1]['M'] @ Matrix.Scale(1.04, 4)))
     for k, mb in hmetal.items():
         metal[k] = MB().extend(mb).extend(mb.mirror_x())
     metal['ShankClaws'] = CLAWS
+    for r_ in BEZEL_ROWS: bezel_row(r_)
+    metal['PaveBezels'] = BEZELS; metal['ShankCups'] = CUPS
     low = {}
 
     # ---------------- objects ---------------------------------------------
@@ -663,7 +716,7 @@ def collision_report():
     sm = {}
     dg = bpy.context.evaluated_depsgraph_get()
     for o in metal_objects():
-        if o.name in ('PaveBeads', 'ShankClaws', 'CenterProngs', 'HeartProngs'): continue
+        if o.name in ('PaveBeads', 'ShankClaws', 'CenterProngs', 'HeartProngs', 'PaveBezels'): continue
         t = BVHTree.FromObject(o, dg)
         for (name, s, st) in items:
             if s.get('target') == o.name or (o.name == 'HeartArm' and s.get('target') == 'GalleryRail') or (o.name == 'GalleryRail' and s.get('target') == 'HeartArm'): continue
