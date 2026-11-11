@@ -12,8 +12,8 @@ OUT = os.path.dirname(os.path.abspath(__file__))
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 # v1.0 round 8 settings (thick half-round U rims with rounded tulip peaks, elliptical U-seats, sideways 3.0 mm stones, flush pave beads, softened metal). Command-line values win (first match).
 TUNED = ('--tilt3 0 --yoff3 0 --sht 2.92 --lift3 -0.57 --u3c 0.57 --u3r 1.45 --u3b 1.0 --u3f 0 --claw3 0 --scr 0 --scl 0.4 '
-         '--rimr 0.3 --rimrb 0.2 --rimh 0.2 --rimseg 10 --bzseg 10 --segseat 12 '
-         '--cove3 0.2 --ro 0.5 --ri 0.45 --gd 0.8 --htilt 60 --legsink -0.6 --shtb 2.5 --bezel 0.05 --bezelz 0.0 --envfloor 0.02 --shm 200').split()
+         '--rimr 0.3 --rimrb 0.2 --rimh 0.2 --rimseg 10 --bzseg 8 --segseat 12 '
+         '--cove3 0.2 --ro 0.5 --ri 0.45 --gd 0.55 --htilt 60 --legsink -0.6 --shtb 2.5 --bezel 0.05 --bezelz 0.0 --envfloor 0.02 --shm 176 --hairpin 1 --sri 0.66 --sro 1.02 --rimin 0.75 --hpst 0.42 --hpsb 0.52 --hprt 10.8').split()
 argv = argv + TUNED
 def arg(name, default):
     return argv[argv.index(name) + 1] if name in argv else default
@@ -77,6 +77,9 @@ TOOTH_R = float(arg('--toothr', 0.5))
 CLAW3 = int(arg('--claw3', 1)); CL_Y = float(arg('--cly', 1.05)); CL_FOOT = float(arg('--clfoot', 1.1)); CL_TIP = float(arg('--cltip', 1.05))
 CL_IN = float(arg('--clin', 0.2)); CL_R0 = float(arg('--clr0', 0.34)); CL_R1 = float(arg('--clr1', 0.17))
 THRU3 = int(arg('--thru3', 0)); WNORM = int(arg('--wnorm', 1)); LIFT3_FIRST = float(arg('--lift3first', 0.0)); U3_R = float(arg('--u3r', 1.45)); U3_C = float(arg('--u3c', 0.6)); U3_F = float(arg('--u3f', 0.35)); U3_STACK = int(arg('--u3stack', 1)); RIM_R = float(arg('--rimr', 0.0)); RIM_RB = float(arg('--rimrb', 0.24)); U3_B = float(arg('--u3b', 0.0)); RIM_H = float(arg('--rimh', 0.12)); RIM_IN = float(arg('--rimin', 1.0)); RIM_SEG = int(arg('--rimseg', 12))
+HAIRPIN = int(arg('--hairpin', 0))   # round 8: U-prong posts (hairpins) phase-locked to the zigzag: 1.3 at each post, 1.0 under each 3.0 stone
+HP_RC = float(arg('--hprc', 9.62)); HP_RHO = float(arg('--hprho', 1.03)); HP_SB = float(arg('--hpsb', 0.46)); HP_ST = float(arg('--hpst', 0.32)); HP_RT = float(arg('--hprt', 10.85))
+HP_GR = float(arg('--hpgr', 0.17)); HP_G0 = float(arg('--hpg0', 10.02)); HP_RB = float(arg('--hprb', 0.28)); HP_SUB = int(arg('--hpsub', 2))
 ENV_FLOOR = float(arg('--envfloor', 0.30)); ENV_STR = float(arg('--envstr', 1.8))
 SIDE_SPAN = radians(130)      # 1.0 mm side-wall rows run +/-130 deg over the top
 SIDE_R = 0.95                 # their centre, measured out from the inner surface
@@ -566,7 +569,7 @@ def build():
             ax = (rad * cos(STONE3_TILT) - Vector((0, 1, 0)) * sin(STONE3_TILT)).normalized()
             row.append(add_round(3.0, rad * (r_out(ph) + STONE3_LIFT + (LIFT3_FIRST if k == 0 else 0.0)) + Vector((0, STONE3_YOFF, 0)), ax, 'Shank', through=(3.0 if THRU3 else None), tangent=Vector((0, 1, 0)), cove=COVE3, cove_z=-0.05))
             if CUP_T > 0: CUPS.extend(cup_for(row[-1]))
-            if U3_R > 0:
+            if U3_R > 0 and not HAIRPIN:
                 # tulip scallop: a round notch through the whole band width under each 3.0 stone, so from the front the wall
                 # top dips in a smooth U under every stone and rises to a peak (the claw foot) between neighbours
                 if U3_B > 0:
@@ -582,6 +585,7 @@ def build():
                     [cc - ey * hw, cc - ey * (SH_W + 0.05), cc - ey * (hf + U3_F * 0.5), cc - ey * hf, cc, cc + ey * hf, cc + ey * (hf + U3_F * 0.5), cc + ey * (SH_W + 0.05), cc + ey * hw],
                     [U3_R + U3_F * 1.3, U3_R + U3_F, U3_R + U3_F * 0.3, U3_R, U3_R, U3_R, U3_R + U3_F * 0.3, U3_R + U3_F, U3_R + U3_F * 1.3], seg=32, smooth=False, tip=False))
         def make_rims(row=row, side=side):
+            if HAIRPIN: return make_hairpins(row, side)
             if RIM_R > 0 and U3_R > 0:
                 # thick half-round rim (a rounded wire ~2*RIM_R thick) running along the U edge on both band faces:
                 # a continuous U under every 3.0 stone, arching over the wall top between neighbours as a blunt rounded tulip peak
@@ -633,11 +637,80 @@ def build():
         RIM_JOBS.append(make_rims)
         tips = scallop_row(row) if SCALLOP else claw_row(row, rb=0.44, ext=CLAW_EXT, base=0.9, off_min=1.10, tooth=TOOTH_L)
         tooth_tips[side] = [(tips[2 * i], tips[2 * i + 1]) for i in range(len(tips) // 2)]   # per boundary: (y-, y+)
+    def make_hairpins(row, side):
+        # Reference front view: between neighbouring 3.0 stones each band face carries a U-shaped prong (a hairpin of
+        # thick half-round wire with a dark slot in it) whose open bottom cradles a 1.3 zigzag stone; the cup of every
+        # 3.0 stone dips between two of them and hugs the 1.0 stone that sits right under the 3.0 stone.
+        phs = [abs(atan2(st['center'].x, st['center'].z)) for st in row]
+        D_ = phs[1] - phs[0]
+        posts = [phs[0] + (j - 0.5) * D_ for j in range(len(row) + 1)]
+        rbg = R_IN + SIDE_R_OUT
+        a0 = math.acos(max(-1, min(1, (HP_RC - rbg) / HP_RHO)))
+        def post_pts(j, first=False, last=False):
+            out = []
+            asc = [(-HP_RHO * sin(a), rbg + HP_RHO * cos(a)) for a in (a0, (a0 + radians(27)) / 2, radians(27))]
+            asc += [(-(HP_SB * 0.62 + HP_ST * 0.38), (rbg + HP_RHO * cos(radians(27))) * 0.55 + HP_RT * 0.45), (-HP_ST, HP_RT)]
+            tip = [(-HP_ST * cos(radians(a)), HP_RT + HP_ST * sin(radians(a))) for a in (40, 90)]
+            half = asc + tip
+            pts_ = half + [(-t, r) for (t, r) in reversed(half[:-1])]
+            if first: pts_ = pts_[len(asc) - 1:]          # top-end post: only the strand that runs down into the first cup
+            if last: pts_ = pts_[:len(pts_) - len(asc) + 1]
+            return [(posts[j] + t / r, r) for (t, r) in pts_]
+        def cup_pts(k):
+            return [(phs[k] + t / HP_RC, HP_RC + 0.03 * abs(t) / 0.6) for t in (-0.6, -0.3, 0.0, 0.3, 0.6)]
+        seq = []
+        for j in range(len(row) + 1):
+            seq.append(('p', j, post_pts(j, first=(j == 0), last=(j == len(row)))))
+            if j < len(row): seq.append(('c', j, cup_pts(j)))
+        ctrl = [pr for (_, _, L) in seq for pr in L]
+        P2 = lambda ph, r: (r * sin(ph), r * cos(ph))
+        # notch cutter for each 3.0 stone: the region outside its U (between the two post apexes), through the band width
+        dense, _ = catmull([Vector((x, 0, z)) for (x, z) in (P2(ph, r) for (ph, r) in ctrl)], [0] * len(ctrl), sub=int(arg('--hpcsub', 1)))
+        dpol = [(atan2(v.x, v.z), v.length) for v in dense]
+        hw = SH_W + 0.6
+        poly = list(dpol)
+        f0, f1 = poly[0][0], poly[-1][0]
+        far = [(f1 + (f0 - f1) * i / 24, 13.5) for i in range(25)]
+        poly = poly + far
+        cmb = MB(); n = len(poly)
+        A = [cmb.vert((side * r * sin(ph), -hw, r * cos(ph))) for (ph, r) in poly]
+        B = [cmb.vert((side * r * sin(ph), hw, r * cos(ph))) for (ph, r) in poly]
+        cmb.face(*A); cmb.face(*reversed(B))
+        for i in range(n): cmb.face(A[i], A[(i + 1) % n], B[(i + 1) % n], B[i])
+        CUTTERS.setdefault('Shank', MB()).extend(cmb)
+        for ys in (-1, 1):
+            def V(ph, r, inset=RIM_R * RIM_IN):
+                return Vector((side * r * sin(ph), ys * (half_w(ph) - inset), r * cos(ph)))
+            path = [V(ph, r) for (ph, r) in ctrl]
+            rads = []
+            for (kind, j, L) in seq:
+                rads += ([HP_RB] * len(L)) if kind == 'c' else ([RIM_R] * len(L))
+            # slot groove down the middle of every U-prong, ending in a round bottom just above its 1.3 stone
+            for j in range(1, len(row)):
+                g = [V(posts[j], r, 0.0) for r in (HP_G0, (HP_G0 + 11.8) / 2, 11.8)]
+                CUTTERS.setdefault('Shank', MB()).extend(tube(g, [HP_GR] * 3, seg=8, smooth=False, tip=True))
+            caps = [o for o in STONES if o.get('target') != 'Shank']
+            for _ in range(2):
+                for ii, pp in enumerate(path):
+                    for o in caps:
+                        d = (pp - o['center']).length
+                        lim = d - o['D'] / 2 - 0.05
+                        if lim < rads[ii]: rads[ii] = max(0.1, lim)
+                        if lim < 0.1:
+                            rr_ = Vector((pp.x, 0, pp.z)).normalized(); path[ii] = pp - rr_ * (0.15 - lim)
+                rads = [min(rads[ii], (rads[max(ii - 1, 0)] + rads[ii] + rads[min(ii + 1, len(rads) - 1)]) / 3 + 0.04) for ii in range(len(rads))]
+            dp, dr = catmull(path, rads, sub=HP_SUB)
+            RIMS.extend(tube(dp, dr, seg=int(arg('--hpseg', 8)), smooth=False, tip=True))
+    ZZ_PH = {}   # zigzag angle per |k| (phase-locked to the 3.0 stones in hairpin mode)
+    if HAIRPIN:
+        a3 = STONE3_START; d3 = PITCH3 / (r_out(radians(60)) + STONE3_LIFT)
+        ZZ_PH[0] = 0.0; ZZ_PH[1] = a3 - d3 / 2
+        for kk in range(2, 16): ZZ_PH[kk] = a3 + (kk - 2) * d3 / 2
     # 1.0 mm stones on both side walls: one continuous row of 31 per wall, over the top, +/-130 deg
     for ysgn in (1, -1):
         srow = []
         for k in range(-15, 16):
-            ph = k * SIDE_SPAN / 15
+            ph = (k * SIDE_SPAN / 15) if not HAIRPIN else (ZZ_PH[abs(k)] * (1 if k >= 0 else -1))
             big = (k % 2 != 0)                                        # staggered zigzag: big 1.3 (outer) alternating with small 1.0 (inner)
             Dz = ZZ_BIG if big else 1.0
             r = R_IN + (SIDE_R_OUT if big else SIDE_R_IN)
@@ -804,7 +877,7 @@ def build():
     # ---------------- objects ---------------------------------------------
     objs = {}
     for k, mb in metal.items():
-        objs[k] = to_obj(k, mb, GOLD, smooth=True, sharp_deg=(85 if k in ('PaveBezels', 'ShankCups', 'ShankClaws') else 40))
+        objs[k] = to_obj(k, mb, GOLD, smooth=True, sharp_deg=(85 if k in ('PaveBezels', 'ShankCups', 'ShankClaws', 'ShankRims') else 40))
     beads = to_obj('PaveBeads', BEADS, GOLD, smooth=True, sharp_deg=80)
     # booleans: seats
     for tgt, cmb in CUTTERS.items():
@@ -816,7 +889,7 @@ def build():
         if '--nobool' in argv: objs[tgt].modifiers.remove(mod)
         else: bpy.ops.object.modifier_apply(modifier=mod.name)
         log('vol before/after', tgt, round(v0, 2), round(mesh_volume(objs[tgt]), 2))
-        bpy.data.objects.remove(cut, do_unlink=True)
+        if '--keepcut' not in argv: bpy.data.objects.remove(cut, do_unlink=True)
         log('boolean', tgt, 'faces', len(objs[tgt].data.polygons), '%.1fs' % (time.time() - t))
         if SOFT_BEVEL > 0 and '--nobool' not in argv:
             # soften every hard edge left by the boolean seats and the slabs (rounded, polished transitions)
