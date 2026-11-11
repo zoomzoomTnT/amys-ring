@@ -10,9 +10,10 @@ from math import sin, cos, pi, radians, sqrt, atan2
 
 OUT = os.path.dirname(os.path.abspath(__file__))
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
-# v1.0 round 7 settings (tulip U-seats, sideways 3.0 mm stones, flush pave beads, softened metal). Command-line values win (first match).
-TUNED = ('--tilt3 0 --yoff3 0 --sht 3.2 --lift3 -0.85 --u3c 0.85 --u3r 1.45 --u3stack 2 --u3f 0.35 --claw3 0 --scr 0 --scl 0.4 '
-         '--cove3 0.2 --ro 0.5 --ri 0.45 --gd 0.6 --htilt 60 --legsink -0.6 --shtb 2.5 --bezel 0.05 --bezelz 0.0 --envfloor 0.02 --shm 240').split()
+# v1.0 round 8 settings (thick half-round U rims with rounded tulip peaks, elliptical U-seats, sideways 3.0 mm stones, flush pave beads, softened metal). Command-line values win (first match).
+TUNED = ('--tilt3 0 --yoff3 0 --sht 2.92 --lift3 -0.57 --u3c 0.57 --u3r 1.45 --u3b 1.0 --u3f 0 --claw3 0 --scr 0 --scl 0.4 '
+         '--rimr 0.3 --rimrb 0.2 --rimh 0.2 --rimseg 10 --bzseg 10 --segseat 12 '
+         '--cove3 0.2 --ro 0.5 --ri 0.45 --gd 0.8 --htilt 60 --legsink -0.6 --shtb 2.5 --bezel 0.05 --bezelz 0.0 --envfloor 0.02 --shm 200').split()
 argv = argv + TUNED
 def arg(name, default):
     return argv[argv.index(name) + 1] if name in argv else default
@@ -75,7 +76,7 @@ TOOTH_Y = float(arg('--toothy', 0.0))
 TOOTH_R = float(arg('--toothr', 0.5))
 CLAW3 = int(arg('--claw3', 1)); CL_Y = float(arg('--cly', 1.05)); CL_FOOT = float(arg('--clfoot', 1.1)); CL_TIP = float(arg('--cltip', 1.05))
 CL_IN = float(arg('--clin', 0.2)); CL_R0 = float(arg('--clr0', 0.34)); CL_R1 = float(arg('--clr1', 0.17))
-THRU3 = int(arg('--thru3', 0)); WNORM = int(arg('--wnorm', 1)); LIFT3_FIRST = float(arg('--lift3first', 0.0)); U3_R = float(arg('--u3r', 1.45)); U3_C = float(arg('--u3c', 0.6)); U3_F = float(arg('--u3f', 0.35)); U3_STACK = int(arg('--u3stack', 1))
+THRU3 = int(arg('--thru3', 0)); WNORM = int(arg('--wnorm', 1)); LIFT3_FIRST = float(arg('--lift3first', 0.0)); U3_R = float(arg('--u3r', 1.45)); U3_C = float(arg('--u3c', 0.6)); U3_F = float(arg('--u3f', 0.35)); U3_STACK = int(arg('--u3stack', 1)); RIM_R = float(arg('--rimr', 0.0)); RIM_RB = float(arg('--rimrb', 0.24)); U3_B = float(arg('--u3b', 0.0)); RIM_H = float(arg('--rimh', 0.12)); RIM_IN = float(arg('--rimin', 1.0)); RIM_SEG = int(arg('--rimseg', 12))
 ENV_FLOOR = float(arg('--envfloor', 0.30)); ENV_STR = float(arg('--envstr', 1.8))
 SIDE_SPAN = radians(130)      # 1.0 mm side-wall rows run +/-130 deg over the top
 SIDE_R = 0.95                 # their centre, measured out from the inner surface
@@ -357,7 +358,7 @@ def cup_for(st, t=None):
 
 # --------------------------------------------------------------------------- stones registry
 STONES = []          # dicts: kind, D, M (matrix)
-BEADS = MB(); CLAWS = MB(); CUTTERS = {}
+BEADS = MB(); CLAWS = MB(); RIMS = MB(); RIM_JOBS = []; CUTTERS = {}
 STONE_MB = {}
 BEZELS = MB(); CUPS = MB(); BEZEL_ROWS = []
 CUP_SEG = int(arg('--cupseg', 24)); SEG_SEAT = int(arg('--segseat', 16)); BZ_SEG = int(arg('--bzseg', 12)); BZ_K = int(arg('--bzk', 6))
@@ -568,12 +569,68 @@ def build():
             if U3_R > 0:
                 # tulip scallop: a round notch through the whole band width under each 3.0 stone, so from the front the wall
                 # top dips in a smooth U under every stone and rises to a peak (the claw foot) between neighbours
-                for so in (0.0, 0.45, 0.9)[:U3_STACK]:   # stacked notches -> straight U sides above the round bottom
+                if U3_B > 0:
+                  # elliptical U (U3_R across, U3_B deep): matches the thick rounded rim laid along its edge
+                  cc = row[-1]['center'] + rad * U3_C; hw = SH_W + 0.6
+                  tgk = Vector((0, 1, 0)).cross(rad).normalized(); sb = rad * (U3_B / U3_R)
+                  Mn = Matrix(((tgk.x, 0, sb.x, cc.x), (tgk.y, 1, sb.y, cc.y), (tgk.z, 0, sb.z, cc.z), (0, 0, 0, 1)))
+                  CUTTERS.setdefault('Shank', MB()).extend(tube([Vector((0, -hw, 0)), Vector((0, 0, 0)), Vector((0, hw, 0))], [U3_R] * 3, seg=40, smooth=False, tip=False).xform(Mn))
+                for so in ((0.0, 0.45, 0.9)[:U3_STACK] if U3_B <= 0 else ()):   # stacked notches -> straight U sides above the round bottom
                   cc = row[-1]['center'] + rad * (U3_C + so); hw = SH_W + 0.6
                   ey = Vector((0, 1, 0)); hf = SH_W - U3_F   # flare starts U3_F inside each band face -> rolled, bright U lip
                   CUTTERS.setdefault('Shank', MB()).extend(tube(
                     [cc - ey * hw, cc - ey * (SH_W + 0.05), cc - ey * (hf + U3_F * 0.5), cc - ey * hf, cc, cc + ey * hf, cc + ey * (hf + U3_F * 0.5), cc + ey * (SH_W + 0.05), cc + ey * hw],
                     [U3_R + U3_F * 1.3, U3_R + U3_F, U3_R + U3_F * 0.3, U3_R, U3_R, U3_R, U3_R + U3_F * 0.3, U3_R + U3_F, U3_R + U3_F * 1.3], seg=32, smooth=False, tip=False))
+        def make_rims(row=row, side=side):
+            if RIM_R > 0 and U3_R > 0:
+                # thick half-round rim (a rounded wire ~2*RIM_R thick) running along the U edge on both band faces:
+                # a continuous U under every 3.0 stone, arching over the wall top between neighbours as a blunt rounded tulip peak
+                Rp = U3_R
+                for ys in (-1, 1):
+                    path = []; rads = []
+                    def frame_k(k):
+                        st = row[k]; c = st['center']; radk = Vector((c.x, 0, c.z)).normalized()
+                        tg = Vector((0, 1, 0)).cross(radk).normalized() * side
+                        yv = Vector((0, ys * (half_w(atan2(c.x, c.z)) - RIM_R * RIM_IN), 0))
+                        cc = Vector((c.x, 0, c.z)) + radk * U3_C + yv
+                        return cc, radk, tg
+                    for k in range(len(row)):
+                        cc, radk, tg = frame_k(k)
+                        Bd = U3_B if U3_B > 0 else Rp
+                        ts = [pi + pi * i / 16 for i in range(17)]
+                        U = [cc + Rp * cos(t) * tg + Bd * sin(t) * radk for t in ts]
+                        UR = [RIM_R - (RIM_R - RIM_RB) * (-sin(t)) for t in ts]
+                        if k == 0:
+                            path += [U[0] + radk * (RIM_H + 0.2) * 1.2, U[0] + radk * (RIM_H + 0.2) * 0.5]; rads += [RIM_R, RIM_R]
+                        path += U; rads += UR
+                        if k < len(row) - 1:
+                            cn, rn, tn = frame_k(k + 1); B = cn + Rp * (-tn)
+                            A = U[-1]; hh = RIM_H
+                            mid = (A + B) / 2
+                            if any(o.get('target') != 'Shank' and (o['center'] - mid).length < 1.6 for o in STONES): hh = -0.45   # dip under the heart-arm cap stones
+                            P1 = A + radk * hh * 1.33; P2 = B + rn * hh * 1.33
+                            for i in range(1, 8):
+                                u = i / 8; path.append(A * (1 - u) ** 3 + P1 * 3 * u * (1 - u) ** 2 + P2 * 3 * u * u * (1 - u) + B * u ** 3); rads.append(RIM_R)
+                        else:
+                            path += [U[-1] + radk * (RIM_H + 0.2) * 0.5, U[-1] + radk * (RIM_H + 0.2) * 1.2]; rads += [RIM_R, RIM_R]
+                    # thin the rim locally (smoothly) where a heart-arm cap stone sits right above it
+                    caps = [o for o in STONES if o.get('target') != 'Shank']
+                    for _ in range(2):
+                        for ii, pp in enumerate(path):
+                            for o in caps:
+                                d = (pp - o['center']).length
+                                lim = d - o['D'] / 2 - 0.05
+                                if lim < rads[ii]: rads[ii] = max(0.1, lim)
+                                if lim < 0.1:   # still too close: push the rim point inward (toward the finger)
+                                    rr_ = Vector((pp.x, 0, pp.z)).normalized(); path[ii] = pp - rr_ * (0.15 - lim)
+                        rads = [min(rads[ii], (rads[max(ii - 1, 0)] + rads[ii] + rads[min(ii + 1, len(rads) - 1)]) / 3 + 0.04) for ii in range(len(rads))]
+                    if '--verbose' in argv:
+                        for o in STONES:
+                            if o.get('target') != 'Shank':
+                                dmin = min(range(len(path)), key=lambda i: (path[i] - o['center']).length)
+                                if (path[dmin] - o['center']).length < 1.3: log('rimnear', o['D'], o.get('target'), tuple(round(x, 2) for x in o['center']), dmin, len(path), round((path[dmin] - o['center']).length, 2), tuple(round(x, 2) for x in path[dmin]))
+                    RIMS.extend(tube(path, rads, seg=RIM_SEG, smooth=False, tip=True))
+        RIM_JOBS.append(make_rims)
         tips = scallop_row(row) if SCALLOP else claw_row(row, rb=0.44, ext=CLAW_EXT, base=0.9, off_min=1.10, tooth=TOOTH_L)
         tooth_tips[side] = [(tips[2 * i], tips[2 * i + 1]) for i in range(len(tips) // 2)]   # per boundary: (y-, y+)
     # 1.0 mm stones on both side walls: one continuous row of 31 per wall, over the top, +/-130 deg
@@ -738,6 +795,8 @@ def build():
     for k, mb in hmetal.items():
         metal[k] = MB().extend(mb).extend(mb.mirror_x())
     metal['ShankClaws'] = CLAWS
+    for job in RIM_JOBS: job()   # after every stone exists, so rims can dip under the heart-arm caps
+    metal['ShankRims'] = RIMS
     for r_ in BEZEL_ROWS: bezel_row(r_)
     metal['PaveBezels'] = BEZELS; metal['ShankCups'] = CUPS
     low = {}
