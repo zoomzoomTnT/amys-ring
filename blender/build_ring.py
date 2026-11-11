@@ -11,9 +11,9 @@ from math import sin, cos, pi, radians, sqrt, atan2
 OUT = os.path.dirname(os.path.abspath(__file__))
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 # v1.0 round 8 settings (thick half-round U rims with rounded tulip peaks, elliptical U-seats, sideways 3.0 mm stones, flush pave beads, softened metal). Command-line values win (first match).
-TUNED = ('--tilt3 0 --yoff3 0 --sht 2.92 --lift3 -0.57 --u3c 0.57 --u3r 1.45 --u3b 1.0 --u3f 0 --claw3 0 --scr 0 --scl 0.4 '
+TUNED = ('--tilt3 0 --yoff3 0 --sht 2.92 --lift3 -0.45 --u3c 0.57 --u3r 1.45 --u3b 1.0 --u3f 0 --claw3 0 --scr 0 --scl 0.4 '
          '--rimr 0.3 --rimrb 0.2 --rimh 0.2 --rimseg 10 --bzseg 8 --segseat 12 '
-         '--cove3 0.2 --ro 0.5 --ri 0.45 --gd 0.66 --htilt 60 --legsink -0.6 --shtb 2.5 --bezel 0.05 --bezelz 0.0 --envfloor 0.02 --shm 176 --hairpin 1 --sri 0.66 --sro 1.02 --hpsb 0.62 --hprt 10.75 --hpdw 0.32 --hprho 1.1 --hpwb 0.3 --hpang 7 --hpmaxl 0.35 --hpnb 5 --hpnr 5 --hpwbt 0.3 --hpst 0.5 --hpgr 0.42 --hpgy 0.05 --hpg0 9.8 --hpg1 0.25').split()
+         '--cove3 0.2 --ro 0.5 --ri 0.45 --gd 0.7 --htilt 60 --legsink -0.6 --shtb 2.5 --bezel 0.05 --bezelz 0.0 --envfloor 0.02 --shm 176 --hairpin 1 --sri 0.66 --sro 1.02 --hpsb 0.62 --hprt 10.75 --hpdw 0.32 --hprho 1.1 --hpwb 0.3 --hpang 7 --hpmaxl 0.35 --hpnb 5 --hpnr 5 --hpwbt 0.3 --hpst 0.5 --hpgr 0 --hpm0 20 --hpm1 21 --cub 0.8 --cua 1.3 --cudrop 0.15 --curid 0 --curt 11.1 --cuw 0.3 --curcut 10.42').split()
 argv = argv + TUNED
 def arg(name, default):
     return argv[argv.index(name) + 1] if name in argv else default
@@ -82,7 +82,7 @@ HP_RC = float(arg('--hprc', 9.62)); HP_RHO = float(arg('--hprho', 1.03)); HP_SB 
 HP_GR = float(arg('--hpgr', 0.17)); HP_G0 = float(arg('--hpg0', 10.02)); HP_RB = float(arg('--hprb', 0.28)); HP_SUB = int(arg('--hpsub', 2))
 HP_ANG = float(arg('--hpang', 5)); HP_MAXL = float(arg('--hpmaxl', 0.18)); HP_NB = int(arg('--hpnb', 6)); HP_NR = int(arg('--hpnr', 6))
 HP_WB = float(arg('--hpwb', 0.36)); HP_H = float(arg('--hph', 0.2)); HP_RO = float(arg('--hpro', 0.3)); HP_DW = float(arg('--hpdw', 0.7)); HP_END = float(arg('--hpend', 0.3))
-HP_GY = float(arg('--hpgy', 0.1)); HP_CR = float(arg('--hpcr', 0.36)); HP_WBT = float(arg('--hpwbt', 0.55)); HP_M0 = float(arg('--hpm0', 9.95)); HP_GD = float(arg('--hpgd', 0.3)); HP_GE = float(arg('--hpge', 0.3)); HP_M1 = float(arg('--hpm1', 10.25)); HP_W0 = float(arg('--hpw0', 10.25)); HP_W1 = float(arg('--hpw1', 10.85)); HP_G1 = float(arg('--hpg1', 0.05))
+HP_GY = float(arg('--hpgy', 0.1)); CU_A = float(arg('--cua', 1.35)); CU_B = float(arg('--cub', 1.05)); CU_RT = float(arg('--curt', 11.0)); CU_W = float(arg('--cuw', 0.22)); CU_RID = int(arg('--curid', 1)); CU_DROP = float(arg('--cudrop', 0.25)); HP_SHIFT = float(arg('--hpshift', 0.08)); CU_BOT = float(arg('--cubot', 9.6)); CU_FLUSH = int(arg('--cuflush', 1)); CU_RO = float(arg('--curo', 0.3)); CU_RCUT = float(arg('--curcut', 10.45)); CU_PT = float(arg('--cupt', 0.8)); HP_SCMIN = float(arg('--hpscmin', 0.45)); HP_CR = float(arg('--hpcr', 0.36)); HP_WBT = float(arg('--hpwbt', 0.55)); HP_M0 = float(arg('--hpm0', 9.95)); HP_GD = float(arg('--hpgd', 0.3)); HP_GE = float(arg('--hpge', 0.3)); HP_M1 = float(arg('--hpm1', 10.25)); HP_W0 = float(arg('--hpw0', 10.25)); HP_W1 = float(arg('--hpw1', 10.85)); HP_G1 = float(arg('--hpg1', 0.05))
 ENV_FLOOR = float(arg('--envfloor', 0.30)); ENV_STR = float(arg('--envstr', 1.8))
 SIDE_SPAN = radians(130)      # 1.0 mm side-wall rows run +/-130 deg over the top
 SIDE_R = 0.95                 # their centre, measured out from the inner surface
@@ -649,28 +649,34 @@ def build():
         posts = [phs[0] + (j - 0.5) * D_ for j in range(len(row) + 1)]
         rbg = R_IN + SIDE_R_OUT
         a0 = math.acos(max(-1, min(1, (HP_RC - rbg) / HP_RHO)))
-        def post_pts(j, first=False, last=False):
-            out = []
-            # smooth corner (radius HP_CR) from the cup bottom up into the straight leg, then the leg to the round tip
-            cx_, cr_ = -(HP_SB + HP_CR), HP_RC + HP_CR
-            asc = [(cx_ + HP_CR * cos(radians(th)), cr_ + HP_CR * sin(radians(th))) for th in (270, 292.5, 315, 337.5, 360)]
-            asc += [(-(HP_SB * (1 - u) + HP_ST * u), (HP_RC + HP_CR) * (1 - u) + HP_RT * u) for u in (1 / 3, 2 / 3, 1.0)]
-            tip = [(-HP_ST * cos(radians(a)), HP_RT + HP_ST * sin(radians(a))) for a in (22.5, 45, 67.5, 90)]
-            half = asc + tip
-            pts_ = half + [(-t, r) for (t, r) in reversed(half[:-1])]
-            if first: pts_ = pts_[len(asc) - 1:]          # top-end post: only the strand that runs down into the first cup
-            if last: pts_ = pts_[:len(pts_) - len(asc) + 1]
-            return [(posts[j] + t / r, r) for (t, r) in pts_]
-        def cup_pts(k):
-            return [(phs[k] + t / HP_RC, HP_RC + 0.02 * (t / 0.5) ** 2 - 0.02) for t in (-0.5, 0.0, 0.5)]
-        seq = []
-        for j in range(len(row) + 1):
-            seq.append(('p', j, post_pts(j, first=(j == 0), last=(j == len(row)))))
-            if j < len(row): seq.append(('c', j, cup_pts(j)))
-        ctrl = [pr for (_, _, L) in seq for pr in L]
-        # ONE continuous centre-line per side (posts + cups), smoothed and resampled by curvature
-        cpts = [Vector((r * sin(ph), 0, r * cos(ph))) for (ph, r) in ctrl]
-        fine, _ = catmull(cpts, [0] * len(cpts), sub=10)
+        # Round 10: every 3.0 stone sits INSIDE its own deep round U cup (opening outward); neighbouring cups rise into
+        # long tapered points between the stones. Built directly as one smooth, tangent-continuous centre-line.
+        av = lambda ph: Vector((sin(ph), 0, cos(ph))); ev = lambda ph: Vector((cos(ph), 0, -sin(ph)))
+        rc0 = [Vector((st['center'].x, 0, st['center'].z)).length for st in row]
+        def cup(k, n=24):
+            Bk = CU_B; c = av(phs[k]) * (CU_BOT + Bk)
+            return [c + ev(phs[k]) * (CU_A * cos(radians(th))) + av(phs[k]) * (Bk * sin(radians(th)))
+                    for th in [180 + 180 * i / n for i in range(n + 1)]]
+        def tip_arc(j, a0_, a1_, n=8):
+            c = av(posts[j]) * CU_RT
+            return [c + ev(posts[j]) * (CU_W * cos(radians(a))) + av(posts[j]) * (CU_W * sin(radians(a)))
+                    for a in [a0_ + (a1_ - a0_) * i / n for i in range(n + 1)]]
+        def bez(P0, T0, P3, T3, n=10):
+            L = (P3 - P0).length / 2.2; P1 = P0 + T0 * L; P2 = P3 - T3 * L
+            return [P0 * (1 - u) ** 3 + P1 * 3 * u * (1 - u) ** 2 + P2 * 3 * u * u * (1 - u) + P3 * u ** 3 for u in [i / n for i in range(n + 1)]]
+        fine = []
+        def add(L):
+            for q in L:
+                if not fine or (q - fine[-1]).length > 1e-6: fine.append(q)
+        nS = len(row)
+        for j in range(nS + 1):
+            if j > 0:     # up the right wall of cup j-1 to the point
+                add(bez(cup(j - 1)[-1], av(phs[j - 1]), av(posts[j]) * CU_RT - ev(posts[j]) * CU_W, av(posts[j])))
+            add(tip_arc(j, 180 if j > 0 else 90, 0 if j < nS else 90))
+            if j < nS:    # down from the point into cup j
+                add(bez(av(posts[j]) * CU_RT + ev(posts[j]) * CU_W, -av(posts[j]), cup(j)[0], -av(phs[j])))
+                add(cup(j))
+        fine = [Vector((v.x, 0, v.z)) for v in fine]
         keep = [fine[0]]; acc = 0.0
         for i in range(1, len(fine) - 1):
             t0 = fine[i] - fine[i - 1]; t1 = fine[i + 1] - fine[i]
@@ -703,6 +709,13 @@ def build():
             pr += [(HP_RO, -HP_DW), (-HP_WB * 0.3 * (1 - m) - HP_RO * m, -HP_DW), (-HP_WB * 0.85 * (1 - m) - HP_RO * m, -0.04 * (1 - m) - HP_DW * 0.5 * m)]
             return pr
         PROFS = [make_prof(k / 8) for k in range(9)]
+        if CU_FLUSH:
+            # flush rolled edge: flat (coplanar) on the metal side, a full quarter-round roll over into the cut
+            fp = [(-HP_WB, -0.03), (-HP_WB * 0.5, -0.004), (0.0, 0.0)]
+            for i in range(1, HP_NR + 1):
+                th = radians(90 * i / HP_NR); fp.append((CU_RO * sin(th), -CU_RO + CU_RO * cos(th)))
+            fp += [(CU_RO, -HP_DW - CU_RO), (-HP_WB * 0.5, -HP_DW - CU_RO)]
+            PROFS = [fp] * 9
         Pw = [Vector((side * v.x, 0, v.z)) for v in keep]
         nP = len(Pw)
         # which in-plane normal points into the cut: test at the bottom of the first cup (cut side = radially outward)
@@ -738,13 +751,48 @@ def build():
                         if (Pw[i] - o['center']).length > o['D'] + 1.5: continue
                         if min((q - o['center']).length for q in sec) < o['D'] / 2 + 0.05:
                             hit = True
-                            if scs[i] > 0.45: scs[i] *= 0.85
-                            else: shifts[i] += 0.08
+                            if scs[i] > HP_SCMIN: scs[i] *= 0.85
+                            else: shifts[i] += HP_SHIFT
                 if not hit: break
                 scs = [min(scs[i], (scs[max(i - 1, 0)] + scs[i] + scs[min(i + 1, nP - 1)]) / 3 + 0.03) for i in range(nP)]
                 shifts = [max(shifts[i], (shifts[max(i - 1, 0)] + shifts[i] + shifts[min(i + 1, nP - 1)]) / 3 - 0.02) for i in range(nP)]
             for i in range(nP): secs.append(section(i, scs[i], shifts[i]))
             RIMS.extend(loft(secs, closed_v=False, cap=True))
+            if CU_FLUSH:
+                # solid plate under each point (flush with the band face) so the tapered point is one piece of metal
+                for j in range(nS + 1):
+                    idx = [i for i, q in enumerate(fine) if q.length >= CU_RCUT and abs(atan2(q.x, q.z) - posts[j]) < D_ * 0.5]
+                    if len(idx) < 3: continue
+                    seg_ = [fine[i] for i in range(idx[0], idx[-1] + 1)]
+                    segr = []
+                    for q in seg_:
+                        if not segr or (q - segr[-1]).length > 0.04: segr.append(q)
+                    if len(segr) < 3: continue
+                    ph_ = posts[j]; yf = half_w(ph_)
+                    pm = MB(); n_ = len(segr)
+                    A_ = [pm.vert((side * q.x, ys * (yf - 0.001), q.z)) for q in segr]
+                    B_ = [pm.vert((side * q.x, ys * (yf - CU_PT), q.z)) for q in segr]
+                    pm.face(*A_); pm.face(*reversed(B_))
+                    for i in range(n_): pm.face(A_[i], A_[(i + 1) % n_], B_[(i + 1) % n_], B_[i])
+                    RIMS.extend(pm)
+            if CU_RID:
+                # flat-topped ridge filling each point between the two cup walls, flush with their crowns -> one solid tapered point
+                for j in range(1, nS):
+                    ra = CU_BOT + CU_B - CU_DROP; rb_ = CU_RT + CU_W * 0.7
+                    ap, ep = av(posts[j]), ev(posts[j])
+                    ap = Vector((side * ap.x, 0, ap.z)); ep = Vector((side * ep.x, 0, ep.z))
+                    rs = [ra + (rb_ - ra) * i / 14 for i in range(15)]
+                    rsecs = []
+                    for i, rr in enumerate(rs):
+                        # half-width of the flat top: distance from the post line to the wall centre-lines at this radius
+                        apu, epu = av(posts[j]), ev(posts[j])
+                        cand = [q for q in fine if abs(q.length - rr) < 0.05 and abs(atan2(q.x, q.z) - posts[j]) < D_ * 0.5]
+                        hwid = min([abs(q.dot(epu) - 0.0) for q in cand] or [CU_W]); hwid = min(hwid, 0.7)
+                        e = min(rr - ra, rb_ - rr); f = 1.0 if e >= 0.25 else max(0.05, sqrt(max(0.0, 1 - ((0.25 - e) / 0.25) ** 2)))
+                        ph_ = posts[j]; yf = ys * half_w(ph_); c = ap * rr
+                        pr_ = [(-hwid - 0.18, 0.0), (-hwid - 0.08, HP_H * 0.7), (-hwid, HP_H), (0, HP_H), (hwid, HP_H), (hwid + 0.08, HP_H * 0.7), (hwid + 0.18, 0.0), (hwid * 0.5, -0.25), (-hwid * 0.5, -0.25)]
+                        rsecs.append([c + ep * bb + Vector((0, yf + ys * hh * f - ys * (1 - f) * 0.05, 0)) for (bb, hh) in pr_])
+                    RIMS.extend(loft(rsecs, closed_v=False, cap=True))
             # smooth rounded slot groove down the middle of every U-prong (hemispherical ends)
             if HP_GR > 0:
                 # smooth rounded slot down the middle of every U-prong: elliptical section (HP_GR across, HP_GD deep),
