@@ -238,7 +238,7 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract, on
     }
   }
 
-  const GLB_BYTES = 2874768; // fallback when the server gzips and sends no Content-Length
+  const GLB_BYTES = 2728428; // fallback when the server gzips and sends no Content-Length
   const loader = new GLTFLoader();
   const url = qs.get('fail') === 'load' ? src + '.missing' : src;
   loader.load(url, async (gltf) => {
