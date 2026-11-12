@@ -8,7 +8,7 @@ import { MeshBVH, MeshBVHUniformStruct, BVHShaderGLSL } from 'three-mesh-bvh';
 // Mostly dark room with a few very bright softboxes: dark facets + white flashes.
 function buildStudio(bright = false) {
   const scene = new THREE.Scene();
-  scene.background = bright ? new THREE.Color(0.22, 0.22, 0.22) : new THREE.Color(0.05, 0.05, 0.05);
+  scene.background = bright ? new THREE.Color(0.10, 0.10, 0.10) : new THREE.Color(0.05, 0.05, 0.05);
   const box = (w, h, intensity, pos, look, tint = [1, 1, 1]) => {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h),
       new THREE.MeshBasicMaterial({ color: new THREE.Color(...tint).multiplyScalar(intensity), side: THREE.DoubleSide }));
@@ -28,7 +28,7 @@ function buildStudio(bright = false) {
     box(0.6, 3.2, i % 2 ? 7 : 12, [Math.cos(a) * r, 0.6, Math.sin(a) * r], [0, 0, 0]);
   }
   // a light gray floor sweep so the band never reflects pure black
-  const floor = new THREE.Mesh(new THREE.CircleGeometry(9, 48), new THREE.MeshBasicMaterial({ color: bright ? new THREE.Color(0.45, 0.45, 0.45) : new THREE.Color(0.18, 0.18, 0.18) }));
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(9, 48), new THREE.MeshBasicMaterial({ color: bright ? new THREE.Color(0.30, 0.30, 0.30) : new THREE.Color(0.18, 0.18, 0.18) }));
   floor.rotation.x = -Math.PI / 2; floor.position.y = -3.5; scene.add(floor);
   return scene;
 }
@@ -238,7 +238,7 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract, on
     }
   }
 
-  const GLB_BYTES = 2656952; // fallback when the server gzips and sends no Content-Length
+  const GLB_BYTES = 2842844; // fallback when the server gzips and sends no Content-Length
   const loader = new GLTFLoader();
   const url = qs.get('fail') === 'load' ? src + '.missing' : src;
   loader.load(url, async (gltf) => {
@@ -253,10 +253,11 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract, on
         o.geometry.deleteAttribute('normal');
         stones.push({ mesh: o, bvh: null, big: /Center|Heart/.test(o.name) });
       } else {
-        o.material = new THREE.MeshPhysicalMaterial({
-          // bright polished 18K white gold: high albedo, slightly soft highlights so it never mirrors black
-          color: new THREE.Color(0.93, 0.93, 0.92), metalness: 1, roughness: 0.12,
-          envMapIntensity: 1.6, clearcoat: 0.3, clearcoatRoughness: 0.04,
+        o.material = new THREE.MeshStandardMaterial({
+          // polished 18K white gold (rhodium finish): a little darker and faintly warmer than chrome, no plastic clear-coat;
+          // light roughness keeps edge highlights soft and lets the studio's dark/bright contrast show in the flat faces
+          color: new THREE.Color(0.80, 0.79, 0.76), metalness: 1, roughness: 0.07,
+          envMapIntensity: 1.15,
         });
       }
     });
