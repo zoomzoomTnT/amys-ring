@@ -11,9 +11,9 @@ from math import sin, cos, pi, radians, sqrt, atan2
 OUT = os.path.dirname(os.path.abspath(__file__))
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 # v1.0 round 8 settings (thick half-round U rims with rounded tulip peaks, elliptical U-seats, sideways 3.0 mm stones, flush pave beads, softened metal). Command-line values win (first match).
-TUNED = ('--tilt3 0 --yoff3 0 --sht 2.92 --lift3 -0.45 --u3c 0.57 --u3r 1.45 --u3b 1.0 --u3f 0 --claw3 0 --scr 0 --scl 0.4 '
+TUNED = ('--tilt3 0 --yoff3 0 --sht 2.92 --u3c 0.57 --u3r 1.45 --u3b 1.0 --u3f 0 --claw3 0 --scr 0 --scl 0.4 '
          '--rimr 0.3 --rimrb 0.2 --rimh 0.2 --rimseg 10 --bzseg 8 --segseat 12 '
-         '--cove3 0.2 --ro 0.5 --ri 0.45 --gd 0.7 --htilt 60 --legsink -0.6 --shtb 2.5 --bezel 0.05 --bezelz 0.0 --envfloor 0.02 --shm 176 --hairpin 1 --sri 0.66 --sro 1.02 --hpsb 0.62 --hprt 10.75 --hpdw 0.32 --hprho 1.1 --hpwb 0.3 --hpang 7 --hpmaxl 0.35 --hpnb 5 --hpnr 5 --hpwbt 0.3 --hpst 0.5 --hpgr 0 --hpm0 20 --hpm1 21 --cub 0.8 --cua 1.3 --cudrop 0.15 --curid 0 --curt 11.1 --cuw 0.3 --curcut 10.42').split()
+         '--cove3 0.2 --ro 0.5 --ri 0.45 --gd 0.55 --htilt 60 --legsink -0.6 --shtb 2.5 --bezel 0.05 --bezelz 0.0 --envfloor 0.02 --shm 176 --hairpin 1 --sro 1.02 --hpsb 0.62 --hprt 10.75 --hpdw 0.32 --hprho 1.1 --hpwb 0.3 --hpang 7 --hpmaxl 0.35 --hpnb 5 --hpnr 5 --hpwbt 0.3 --hpst 0.5 --hpgr 0 --hpm0 20 --hpm1 21 --cub 0.8 --cudrop 0.15 --curid 0 --curt 11.1 --cuw 0.3 --curcut 10.2 --cuplz 0.002 --cusq 1 --curib 1 --cua 1.38 --cufl 14 --cubot 9.3 --curo 0.22 --cuft 0.24 --cuwb 0.18 --cure 11.3 --sri 0.56 --lift3 -0.6').split()
 argv = argv + TUNED
 def arg(name, default):
     return argv[argv.index(name) + 1] if name in argv else default
@@ -82,7 +82,7 @@ HP_RC = float(arg('--hprc', 9.62)); HP_RHO = float(arg('--hprho', 1.03)); HP_SB 
 HP_GR = float(arg('--hpgr', 0.17)); HP_G0 = float(arg('--hpg0', 10.02)); HP_RB = float(arg('--hprb', 0.28)); HP_SUB = int(arg('--hpsub', 2))
 HP_ANG = float(arg('--hpang', 5)); HP_MAXL = float(arg('--hpmaxl', 0.18)); HP_NB = int(arg('--hpnb', 6)); HP_NR = int(arg('--hpnr', 6))
 HP_WB = float(arg('--hpwb', 0.36)); HP_H = float(arg('--hph', 0.2)); HP_RO = float(arg('--hpro', 0.3)); HP_DW = float(arg('--hpdw', 0.7)); HP_END = float(arg('--hpend', 0.3))
-HP_GY = float(arg('--hpgy', 0.1)); CU_A = float(arg('--cua', 1.35)); CU_B = float(arg('--cub', 1.05)); CU_RT = float(arg('--curt', 11.0)); CU_W = float(arg('--cuw', 0.22)); CU_RID = int(arg('--curid', 1)); CU_DROP = float(arg('--cudrop', 0.25)); HP_SHIFT = float(arg('--hpshift', 0.08)); CU_BOT = float(arg('--cubot', 9.6)); CU_FLUSH = int(arg('--cuflush', 1)); CU_RO = float(arg('--curo', 0.3)); CU_RCUT = float(arg('--curcut', 10.45)); CU_PT = float(arg('--cupt', 0.8)); HP_SCMIN = float(arg('--hpscmin', 0.45)); HP_CR = float(arg('--hpcr', 0.36)); HP_WBT = float(arg('--hpwbt', 0.55)); HP_M0 = float(arg('--hpm0', 9.95)); HP_GD = float(arg('--hpgd', 0.3)); HP_GE = float(arg('--hpge', 0.3)); HP_M1 = float(arg('--hpm1', 10.25)); HP_W0 = float(arg('--hpw0', 10.25)); HP_W1 = float(arg('--hpw1', 10.85)); HP_G1 = float(arg('--hpg1', 0.05))
+HP_GY = float(arg('--hpgy', 0.1)); CU_A = float(arg('--cua', 1.35)); CU_B = float(arg('--cub', 1.05)); CU_RT = float(arg('--curt', 11.0)); CU_W = float(arg('--cuw', 0.22)); CU_RID = int(arg('--curid', 1)); CU_DROP = float(arg('--cudrop', 0.25)); HP_SHIFT = float(arg('--hpshift', 0.08)); CU_BOT = float(arg('--cubot', 9.6)); CU_FLUSH = int(arg('--cuflush', 1)); CU_SQ = int(arg('--cusq', 0)); CU_FL = float(arg('--cufl', 0)); CU_RE = float(arg('--cure', 11.15)); CU_CR = float(arg('--cucr', 0.14)); CU_HALF = float(arg('--cuhalf', 0.35)); CU_RIB = int(arg('--curib', 0)); CU_HC = float(arg('--cuhc', 0.06)); CU_WB = float(arg('--cuwb', 0.18)); CU_FT = float(arg('--cuft', 0.12)); CU_PLZ = float(arg('--cuplz', 0.0)); CU_RO = float(arg('--curo', 0.3)); CU_RCUT = float(arg('--curcut', 10.45)); CU_PT = float(arg('--cupt', 0.8)); HP_SCMIN = float(arg('--hpscmin', 0.45)); HP_CR = float(arg('--hpcr', 0.36)); HP_WBT = float(arg('--hpwbt', 0.55)); HP_M0 = float(arg('--hpm0', 9.95)); HP_GD = float(arg('--hpgd', 0.3)); HP_GE = float(arg('--hpge', 0.3)); HP_M1 = float(arg('--hpm1', 10.25)); HP_W0 = float(arg('--hpw0', 10.25)); HP_W1 = float(arg('--hpw1', 10.85)); HP_G1 = float(arg('--hpg1', 0.05))
 ENV_FLOOR = float(arg('--envfloor', 0.30)); ENV_STR = float(arg('--envstr', 1.8))
 SIDE_SPAN = radians(130)      # 1.0 mm side-wall rows run +/-130 deg over the top
 SIDE_R = 0.95                 # their centre, measured out from the inner surface
@@ -676,6 +676,35 @@ def build():
             if j < nS:    # down from the point into cup j
                 add(bez(av(posts[j]) * CU_RT + ev(posts[j]) * CU_W, -av(posts[j]), cup(j)[0], -av(phs[j])))
                 add(cup(j))
+        if CU_SQ:
+            # Round 11: deep U cups (round bottom, straight parallel walls) and long fingers with squared-off ends
+            fine = []
+            cc = lambda k: av(phs[k]) * (CU_BOT + CU_A)
+            fl = radians(CU_FL)
+            def cupc(k, n=28):
+                return [cc(k) + ev(phs[k]) * (CU_A * cos(radians(th))) + av(phs[k]) * (CU_A * sin(radians(th))) for th in [180 + CU_FL + (180 - 2 * CU_FL) * i / n for i in range(n + 1)]]
+            def wall_s(E, d):   # distance along d from E to radius CU_RE
+                b_ = E.dot(d); c_ = E.dot(E) - CU_RE ** 2; return -b_ + sqrt(max(0.0, b_ * b_ - c_))
+            def qb(P0, P1, P2, n=6):
+                return [P0 * (1 - u) ** 2 + P1 * 2 * u * (1 - u) + P2 * u * u for u in [i / n for i in range(n + 1)]]
+            def line(P, Q, n):
+                return [P + (Q - P) * (i / n) for i in range(n + 1)]
+            for j in range(nS + 1):
+                if j > 0:
+                    El = cc(j - 1) + ev(phs[j - 1]) * (CU_A * cos(fl)) - av(phs[j - 1]) * (CU_A * sin(fl)); dl = av(phs[j - 1]) * cos(fl) + ev(phs[j - 1]) * sin(fl); sl = wall_s(El, dl); Le = El + dl * sl
+                if j < nS:
+                    Er = cc(j) - ev(phs[j]) * (CU_A * cos(fl)) - av(phs[j]) * (CU_A * sin(fl)); dr = av(phs[j]) * cos(fl) - ev(phs[j]) * sin(fl); sr = wall_s(Er, dr); Re = Er + dr * sr
+                if j == 0: Le = Re - ev(posts[j]) * CU_HALF; El = None
+                if j == nS: Re = Le + ev(posts[j]) * CU_HALF; Er = None
+                ue = (Re - Le).normalized(); cr = min(CU_CR, (Re - Le).length / 2.5)
+                if El is not None:
+                    add(line(El, Le - dl * cr, 8)); add(qb(Le - dl * cr, Le, Le + ue * cr))
+                else:
+                    add([Le + ue * cr])
+                if Er is not None:
+                    add(line(Le + ue * cr, Re - ue * cr, 4)); add(qb(Re - ue * cr, Re, Re - dr * cr)); add(line(Re - dr * cr, Er, 8)); add(cupc(j))
+                else:
+                    add(line(Le + ue * cr, Re, 3))
         fine = [Vector((v.x, 0, v.z)) for v in fine]
         keep = [fine[0]]; acc = 0.0
         for i in range(1, len(fine) - 1):
@@ -709,7 +738,15 @@ def build():
             pr += [(HP_RO, -HP_DW), (-HP_WB * 0.3 * (1 - m) - HP_RO * m, -HP_DW), (-HP_WB * 0.85 * (1 - m) - HP_RO * m, -0.04 * (1 - m) - HP_DW * 0.5 * m)]
             return pr
         PROFS = [make_prof(k / 8) for k in range(9)]
-        if CU_FLUSH:
+        if CU_RIB:
+            # wide flat ribbon: zero-slope blend on the metal side, broad bright crowned top, soft rounded edge into the cut
+            Hc = CU_HC
+            fp = [(-CU_WB, -0.02), (-CU_WB * 0.66, Hc * 0.45), (-CU_WB * 0.33, Hc * 0.9), (0.0, Hc), (CU_FT, Hc * 0.97)]
+            for i in range(1, HP_NR + 1):
+                th = radians(90 * i / HP_NR); fp.append((CU_FT + CU_RO * sin(th), Hc - CU_RO + CU_RO * cos(th)))
+            fp += [(CU_FT + CU_RO, -HP_DW - CU_RO), (0.05, -HP_DW - CU_RO), (-CU_WB * 0.8, -0.05)]
+            PROFS = [fp] * 9
+        elif CU_FLUSH:
             # flush rolled edge: flat (coplanar) on the metal side, a full quarter-round roll over into the cut
             fp = [(-HP_WB, -0.03), (-HP_WB * 0.5, -0.004), (0.0, 0.0)]
             for i in range(1, HP_NR + 1):
@@ -770,7 +807,7 @@ def build():
                     if len(segr) < 3: continue
                     ph_ = posts[j]; yf = half_w(ph_)
                     pm = MB(); n_ = len(segr)
-                    A_ = [pm.vert((side * q.x, ys * (yf - 0.001), q.z)) for q in segr]
+                    A_ = [pm.vert((side * q.x, ys * (yf - CU_PLZ), q.z)) for q in segr]
                     B_ = [pm.vert((side * q.x, ys * (yf - CU_PT), q.z)) for q in segr]
                     pm.face(*A_); pm.face(*reversed(B_))
                     for i in range(n_): pm.face(A_[i], A_[(i + 1) % n_], B_[(i + 1) % n_], B_[i])
