@@ -1,23 +1,23 @@
 {
  "inner_diameter_mm": 16.1,
- "metal_volume_union_mm3": 557.1,
- "metal_volume_sum_parts_mm3": 581.8,
+ "metal_volume_union_mm3": 557.4,
+ "metal_volume_sum_parts_mm3": 580.0,
  "parts_mm3": {
-  "Shank": 339.95,
+  "Shank": 353.31,
   "GalleryRail": 63.02,
   "CenterProngs": 29.39,
   "Arms": 35.15,
-  "HeartArm": 42.44,
-  "HeartProngs": 13.05,
-  "HeartPosts": 0.92,
+  "HeartArm": 35.37,
+  "HeartProngs": 5.14,
+  "HeartPosts": 0.0,
   "ShankClaws": 0.0,
-  "ShankRims": 53.72,
+  "ShankRims": 54.44,
   "PaveBezels": 4.2,
   "ShankCups": 0.0,
   "PaveBeads": 0.0
  },
  "est_weight_g_18kw_14_7": 8.19,
- "stl_faces": 506600,
+ "stl_faces": 501451,
  "stone_counts": {
   "round 3.0": 14,
   "round 1.3": 32,
@@ -45,6 +45,6 @@
   "girdle": 0.9210500000000001,
   "table_mm": 7.6979999999999995
  },
- "glb_MB": 2.84,
- "tris": 132528
+ "glb_MB": 2.87,
+ "tris": 133748
 }

@@ -13,7 +13,7 @@ argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 # v1.0 round 8 settings (thick half-round U rims with rounded tulip peaks, elliptical U-seats, sideways 3.0 mm stones, flush pave beads, softened metal). Command-line values win (first match).
 TUNED = ('--tilt3 0 --yoff3 0 --sht 2.92 --u3c 0.57 --u3r 1.45 --u3b 1.0 --u3f 0 --claw3 0 --scr 0 --scl 0.4 '
          '--rimr 0.3 --rimrb 0.2 --rimh 0.2 --rimseg 10 --bzseg 8 --segseat 12 '
-         '--cove3 0.2 --ro 0.5 --ri 0.45 --gd 0.51 --htilt 60 --legsink -0.6 --shtb 2.5 --bezel 0.05 --bezelz 0.0 --envfloor 0.02 --shm 176 --hairpin 1 --sro 1.02 --hpsb 0.62 --hprt 10.75 --hpdw 0.32 --hprho 1.1 --hpwb 0.3 --hpang 7 --hpmaxl 0.35 --hpnb 5 --hpnr 5 --hpwbt 0.3 --hpst 0.5 --hpgr 0 --hpm0 20 --hpm1 21 --cub 0.8 --cudrop 0.15 --curid 0 --curt 11.1 --cuw 0.3 --curcut 10.2 --cuplz 0.002 --cusq 1 --cusolid 1 --cufr 0.2 --rough 0.16 --goldcol 0.80,0.79,0.76 --curib 1 --cua 1.38 --cufl 14 --cubot 9.3 --curo 0.22 --cuft 0.24 --cuwb 0.18 --cure 11.3 --sri 0.56 --lift3 -0.6').split()
+         '--cove3 0.2 --ro 0.5 --ri 0.45 --gd 0.36 --htilt 60 --legsink -0.6 --shtb 2.5 --bezel 0.05 --bezelz 0.0 --envfloor 0.02 --shm 176 --hairpin 1 --sro 1.02 --hpsb 0.62 --hprt 10.75 --hpdw 0.32 --hprho 1.1 --hpwb 0.3 --hpang 7 --hpmaxl 0.35 --hpnb 5 --hpnr 5 --hpwbt 0.3 --hpst 0.5 --hpgr 0 --hpm0 20 --hpm1 21 --cub 0.8 --cudrop 0.15 --curid 0 --curt 11.1 --cuw 0.3 --curcut 10.2 --cuplz 0.002 --cusq 1 --cusolid 1 --cufr 0.2 --hm2 1 --hm2st 1 --hm2tc 1.4 --hm2vd 0.55 --hm2vw 1.0 --hm2vy -2.2 --hm2ay1 -2.9 --hm2ax1 1.4 --hm2s0 0.4 --hm2pitch 1.5 --rough 0.16 --goldcol 0.80,0.79,0.76 --curib 1 --cua 1.38 --cufl 14 --cubot 9.3 --curo 0.22 --cuft 0.24 --cuwb 0.18 --cure 11.3 --sri 0.56 --lift3 -0.6').split()
 argv = argv + TUNED
 def arg(name, default):
     return argv[argv.index(name) + 1] if name in argv else default
@@ -46,6 +46,10 @@ H_WALL_PITCH = 1.5
 H_Y0, H_Y1 = float(arg('--hy0', -3.3)), float(arg('--hy1', 3.0))
 H_WALL_SHIFT = float(arg('--wshift', -0.7))
 LEG_DEG = float(arg('--legdeg', 46))
+HM2 = int(arg('--hm2', 0)); HM2_D = float(arg('--hm2d', 0.65)); HM2_W = float(arg('--hm2w', 0.6)); HM2_YT = float(arg('--hm2yt', 2.6)); HM2_MIT = float(arg('--hm2mit', 1.4))
+HM2_VD = float(arg('--hm2vd', 0.3)); HM2_VW = float(arg('--hm2vw', 0.8)); HM2_VY = float(arg('--hm2vy', -1.5)); HM2_VZ = float(arg('--hm2vz', 0.45)); HM2_CX = float(arg('--hm2cx', 3.0))
+HM2_SINK = float(arg('--hm2sink', 0.5)); HM2_TR = float(arg('--hm2tr', 11.4)); HM2_PW = float(arg('--hm2pw', 2.2)); HM2_PT = float(arg('--hm2pt', 0.8)); HM2_PS = float(arg('--hm2ps', 0.5))
+HM2_S0 = float(arg('--hm2s0', 0.5)); HM2_NW = int(arg('--hm2nw', 4)); HM2_STRAIGHT = int(arg('--hm2st', 0)); HM2_VB = float(arg('--hm2vb', 0.0)); HM2_TC = float(arg('--hm2tc', 0)); HM2_TCY = float(arg('--hm2tcy', 0.15)); HM2_TCW = float(arg('--hm2tcw', 0.7)); HM2_AX0 = float(arg('--hm2ax0', 4.2)); HM2_AY0 = float(arg('--hm2ay0', 2.0)); HM2_AX1 = float(arg('--hm2ax1', 1.3)); HM2_AY1 = float(arg('--hm2ay1', -3.3)); HM2_PLANK = int(arg('--hm2plank', 0)); HM2_CP = float(arg('--hm2cp', 1.5)); HM2_CZ = float(arg('--hm2cz', 0.0)); HM2_FX0 = float(arg('--hm2fx0', 0.95)); HM2_FY0 = float(arg('--hm2fy0', -1.75)); HM2_FX1 = float(arg('--hm2fx1', 0.55)); HM2_FY1 = float(arg('--hm2fy1', -3.3)); HM2_FZ1 = float(arg('--hm2fz1', -3.0)); HM2_FW = float(arg('--hm2fw', 0.8)); HM2_FT = float(arg('--hm2ft', 0.8)); HM2_PITCH = float(arg('--hm2pitch', 1.46))
 LEG_DY = float(arg('--legdy', -0.4)); LEG_R = float(arg('--legr', 0.42))
 LEG_SINK = float(arg('--legsink', -0.8))
 H_COUNTS = [4, 4, 3]
@@ -967,10 +971,63 @@ def build():
     CAP_O = 0.85
     CAP_DZ, CAP_DT = float(arg('--capdz', 0.35)), float(arg('--capdt', 0.7))
     arm = MB()
-    for s in (-1, 1):
+    HMI = HM.inverted()
+    if HM2:
+        # Round 13: heart-shaped basket. Two solid walls follow the heart's outline (offset outward) from the lobes down
+        # to the point, meet in a V under the point, a solid V claw grips the point over the girdle, and one flat
+        # polished plank runs from the V down onto the shank (as in the reference side/front views).
+        def opath(d, ymax, ymin=-9):
+            i0 = min(range(H_N), key=lambda i: H_PTS[i][1]); st_ = 1 if H_PTS[(i0 + 1) % H_N][0] > 0 else -1
+            rs = []; i = i0
+            for _ in range(H_N):
+                x, y = H_PTS[i % H_N]
+                if y > ymax or x < -0.01: break
+                if x > 0.02 and y >= ymin: rs.append((x, y))
+                i += st_
+            rs.reverse(); out = []
+            for i, (x, y) in enumerate(rs):
+                x0_, y0_ = rs[max(i - 1, 0)]; x1_, y1_ = rs[min(i + 1, len(rs) - 1)]
+                tx, ty = x1_ - x0_, y1_ - y0_; L = math.hypot(tx, ty) or 1
+                nx, ny = -ty / L, tx / L
+                if nx * x + ny * (y + 0.0) < 0: nx, ny = -nx, -ny
+                out.append((x + nx * d, y + ny * d))
+            return out
+        def vpath(d, ymax, ymin=-9):
+            r_ = opath(d, ymax, ymin); r_ = [q for q in r_ if q[0] > 0.12]
+            tip = (0.0, -H_SIZE / 2 - d * HM2_MIT)
+            return [(-x, y) for (x, y) in r_] + [tip] + list(reversed(r_))
+        def lsweep(path2, W, z0, z1, rr=0.22, k=3):
+            zc_, T2 = (z0 + z1) / 2, z1 - z0; rr = min(rr, W / 2 - 0.02, T2 / 2 - 0.02); secs = []
+            sec = []
+            for (cx, cy, a0) in ((W / 2 - rr, T2 / 2 - rr, 0), (-W / 2 + rr, T2 / 2 - rr, 90), (-W / 2 + rr, -T2 / 2 + rr, 180), (W / 2 - rr, -T2 / 2 + rr, 270)):
+                for i in range(k + 1):
+                    a = radians(a0 + 90 * i / k); sec.append((cx + rr * cos(a), cy + rr * sin(a)))
+            n_ = len(path2)
+            for i in range(n_):
+                x0_, y0_ = path2[max(i - 1, 0)]; x1_, y1_ = path2[min(i + 1, n_ - 1)]
+                tx, ty = x1_ - x0_, y1_ - y0_; L = math.hypot(tx, ty) or 1; wx, wy = ty / L, -tx / L
+                px, py = path2[i]
+                secs.append([hl(px + wx * u, py + wy * u, zc_ + v) for (u, v) in sec])
+            return loft(secs, closed_v=False, cap=True)
+        if HM2_STRAIGHT:
+            # straight splayed arms (reference side view): wide under the lobes, converging onto the V claw at the point
+            WPATH = [(HM2_AX0 + (HM2_AX1 - HM2_AX0) * i / 12, HM2_AY0 + (HM2_AY1 - HM2_AY0) * i / 12) for i in range(13)]
+            for sx_ in (-1, 1): arm.extend(lsweep([(sx_ * x, y) for (x, y) in WPATH][::sx_], HM2_W, ZB, ZT))
+            VP = vpath(HM2_VD, HM2_VY)
+            arm.extend(lsweep(VP, HM2_VW, ZB + HM2_VB, HM2_VZ, rr=0.28))
+            if HM2_TC > 0:   # solid top cap across the lobes (front view: thick bar at the heart's upper end, meeting the rail)
+                arm.extend(lbar((-HM2_TC, H_SIZE / 2 + HM2_TCY, (ZT + HM2_VZ) / 2 - 0.3), (HM2_TC, H_SIZE / 2 + HM2_TCY, (ZT + HM2_VZ) / 2 - 0.3), HM2_TCW, HM2_VZ - ZT + 0.6))
+        else:
+            WPATH = vpath(HM2_D, HM2_YT)
+            arm.extend(lsweep(WPATH, HM2_W, ZB, ZT))
+        for sx_ in ((-1, 1) if not HM2_STRAIGHT else ()):   # V fork: two flat polished bars grip the point over the crown and run down onto the band
+            arm.extend(lbar((sx_ * HM2_FX0, HM2_FY0, HM2_VZ), (sx_ * HM2_FX1, HM2_FY1, HM2_FZ1), HM2_FW, HM2_FT, n=Vector((0, 1, 0))))
+        arm.extend(lbar((-HM2_CX, Y1 + 0.25, zc), (HM2_CX, Y1 + 0.25, zc), 0.5, T_))   # inner end cap under the lobes (meets the rail)
+    for s in ((-1, 1) if not HM2 else ()):
         arm.extend(lbar((s * (WX0 + WX1) / 2, Y0, zc), (s * (WX0 + WX1) / 2, Y1, zc), WX1 - WX0, T_))
-    arm.extend(lbar((-WX1, Y1 + 0.25, zc), (WX1, Y1 + 0.25, zc), 0.5, T_))               # inner end cap (meets the rail)
-    arm.extend(lbar((-WX1, Y0 - CAP_O / 2, zc + CAP_DZ), (WX1, Y0 - CAP_O / 2, zc + CAP_DZ), CAP_O, T_ + CAP_DT))   # outer end cap
+    if not HM2:
+        arm.extend(lbar((-WX1, Y1 + 0.25, zc), (WX1, Y1 + 0.25, zc), 0.5, T_))               # inner end cap (meets the rail)
+        arm.extend(lbar((-WX1, Y0 - CAP_O / 2, zc + CAP_DZ), (WX1, Y0 - CAP_O / 2, zc + CAP_DZ), CAP_O, T_ + CAP_DT))   # outer end cap
     hmetal['HeartArm'] = arm
     # claws: two over each long side + one over the point
     hzc = lambda s: H_G / 2 + H_HC * (1 - s) / (1 - H_TS)
@@ -981,10 +1038,12 @@ def build():
     for yq in (1.5, -0.9):
         for sgn in (-1, 1):
             q = side_pt(yq, sgn)
-            hp_.extend(tube([hl(sgn * (WX0 + 0.35), q.y, ZT - 0.5), hl(sgn * (WX0 + 0.1), q.y, ZT + 0.5),
+            r0_ = (hl(q.x + sgn * (HM2_D + 0.05), q.y, ZT - 0.5), hl(q.x + sgn * (HM2_D - 0.15), q.y, ZT + 0.5)) if HM2 else (hl(sgn * (WX0 + 0.35), q.y, ZT - 0.5), hl(sgn * (WX0 + 0.1), q.y, ZT + 0.5))
+            if HM2 and yq < 0: continue      # the V claw now holds the lower sides
+            hp_.extend(tube([r0_[0], r0_[1],
                              hl(q.x * 1.04, q.y, H_G / 2 + 0.35), hl(q.x * 0.90, q.y * 0.90, hzc(0.90) + 0.08)], [0.42, 0.42, 0.36, 0.16], seg=12))
     q = Vector((0, -H_SIZE / 2))
-    hp_.extend(tube([hl(0, Y0 - 0.3, zc + 0.6), hl(0, Y0 - 0.1, ZT + 0.9), hl(0, -3.05, H_G / 2 + 0.35), hl(0, -2.75, hzc(0.9) + 0.08)], [0.45, 0.42, 0.36, 0.16], seg=12))
+    if not HM2: hp_.extend(tube([hl(0, Y0 - 0.3, zc + 0.6), hl(0, Y0 - 0.1, ZT + 0.9), hl(0, -3.05, H_G / 2 + 0.35), hl(0, -2.75, hzc(0.9) + 0.08)], [0.45, 0.42, 0.36, 0.16], seg=12))
     hmetal['HeartProngs'] = hp_
     # support legs: from the outer end cap down onto the nearest shank claw pair (the L-bar seen in the front view)
     posts = MB()
@@ -992,7 +1051,18 @@ def build():
     tt = tooth_tips[1]
     ang = lambda P: atan2(P.x, P.z)
     bi = min(range(len(tt)), key=lambda i: abs(ang((tt[i][0] + tt[i][1]) / 2) - radians(LEG_DEG)))
-    for tip in (tt[bi] if not SCALLOP else [min(tt[bi], key=lambda P: P.y)]):
+    PLANK = None
+    if HM2 and HM2_PLANK:
+        a3s = sorted(atan2(o['center'].x, o['center'].z) for o in STONES if o['kind'] == 'round' and o['D'] == 3.0 and o['center'].x > 0)
+        mids = [(a3s[i] + a3s[i + 1]) / 2 for i in range(len(a3s) - 1)]
+        pa = min(mids, key=lambda m: abs(m - radians(LEG_DEG)))
+        tgt = Vector((sin(pa), 0, cos(pa))) * HM2_TR
+        A_ = hl(0, -H_SIZE / 2 - HM2_D * HM2_MIT + 0.35, (ZB + HM2_VZ) / 2 - 0.4)
+        dd = (tgt - A_).normalized(); nn = Vector((0, 1, 0)).cross(dd).normalized()
+        if nn.dot(Vector((A_.x, 0, A_.z)).normalized()) < 0: nn = -nn
+        pmb, _, _, _ = bar(A_ - dd * 0.2, tgt, nn, HM2_PW, HM2_PT, rr=0.28)
+        arm.extend(pmb); PLANK = (A_, tgt, nn); log('plank', tuple(round(v, 2) for v in A_), tuple(round(v, 2) for v in tgt), 'len', round((tgt - A_).length, 2))
+    for tip in ((tt[bi] if not SCALLOP else [min(tt[bi], key=lambda P: P.y)]) if not HM2 else []):
         tgt = tip - Vector((sin(ang(tip)), 0, cos(ang(tip)))) * LEG_SINK + Vector((0, LEG_DY, 0))
         posts.extend(tube([leg_c, (leg_c + tgt) / 2, tgt], [LEG_R, LEG_R * 0.92, LEG_R * 0.92], seg=12, tip=False))
     hmetal['HeartPosts'] = posts
@@ -1001,11 +1071,35 @@ def build():
         'deg', round(math.degrees(ang((tt[bi][0] + tt[bi][1]) / 2)), 1))
     # 1.4 mm stones: 4 on each wall's outer face + 3 on the outer end cap (11 per heart)
     hst = []
-    for s in (-1, 1):
+    if HM2:
+        # 5 x 1.4 on the outer face of each basket wall + 1 on the plank's outer face (11 per heart, as before)
+        rp = [q for q in WPATH if q[0] > 0.05]; rp.sort(key=lambda q: -q[1])
+        cum_ = [0.0]
+        for i in range(1, len(rp)): cum_.append(cum_[-1] + math.hypot(rp[i][0] - rp[i - 1][0], rp[i][1] - rp[i - 1][1]))
+        def at(sv):
+            for i in range(1, len(rp)):
+                if cum_[i] >= sv:
+                    u = (sv - cum_[i - 1]) / max(1e-9, cum_[i] - cum_[i - 1]); x0_, y0_ = rp[i - 1]; x1_, y1_ = rp[i]
+                    tx, ty = x1_ - x0_, y1_ - y0_; L = math.hypot(tx, ty) or 1
+                    nx, ny = ty / L, -tx / L
+                    if nx < 0: nx, ny = -nx, -ny
+                    return x0_ + u * tx, y0_ + u * ty, nx, ny
+            return rp[-1][0], rp[-1][1], 1.0, 0.0
+        for k in range(HM2_NW):
+            x_, y_, nx, ny = at(HM2_S0 + k * HM2_PITCH)
+            for s in (-1, 1):
+                hst.append((Vector((s * (x_ + nx * (HM2_W / 2 - 0.04)), y_ + ny * (HM2_W / 2 - 0.04), zc)), Vector((s * nx, ny, 0)), s))
+        if PLANK:
+            A_, B_, nn = PLANK; mid = A_ + (B_ - A_) * HM2_PS
+            hst.append((HMI @ (mid + nn * (HM2_PT / 2 - 0.04)), HMI.to_3x3() @ nn, 0))
+        else:
+            for k in (-1, 0, 1):   # 3 on the inner end cap, facing the centre head
+                hst.append((Vector((k * HM2_CP, Y1 + 0.5 - 0.04, zc + HM2_CZ)), Vector((0, 1, 0)), 0))
+    for s in ((-1, 1) if not HM2 else ()):
         for k in range(4):
             y = (Y0 + Y1) / 2 + H_WALL_SHIFT + (k - 1.5) * H_WALL_PITCH
             hst.append((Vector((s * (WX1 - 0.04), y, zc)), Vector((s, 0, 0)), s))
-    for k in (-1, 0, 1):
+    for k in ((-1, 0, 1) if not HM2 else ()):
         hst.append((Vector((k * 1.55, Y0 - CAP_O + 0.04, zc + CAP_DZ)), Vector((0, -1, 0)), 0))
     hpitch = H_WALL_PITCH
     for side in (1, -1):
@@ -1021,6 +1115,7 @@ def build():
         STONES.append(dict(kind='heart', D=6.0, M=(Matrix.Scale(-1, 4, Vector((1, 0, 0))) @ HM) if side < 0 else HM.copy(),
                            center=mir(H_CENTER), axis=mir(e_n), target='GalleryRail'))
         CUTTERS.setdefault('GalleryRail', MB()).extend(heart_stone().xform(STONES[-1]['M'] @ Matrix.Scale(1.04, 4)))
+        if HM2: CUTTERS.setdefault('HeartArm', MB()).extend(heart_stone().xform(STONES[-1]['M'] @ Matrix.Scale(1.03, 4)))
     for k, mb in hmetal.items():
         metal[k] = MB().extend(mb).extend(mb.mirror_x())
     metal['ShankClaws'] = CLAWS
