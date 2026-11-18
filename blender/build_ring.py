@@ -15,7 +15,10 @@ argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 # longer tapered points (shortened under the heart-arm stones), a thin flat heart foot bar, rounder pave bezels.
 # Round 15 (owner review): heart foot is a V prong (two plates meeting at an outward ridge, cradling the point), wider
 # rounded U rims that catch the light, U cups back near round-13 size, and a rounded women's-ring section on the plain band.
-TUNED = ('--hm2footv 1 --hm2footw 1.8 --hm2footd 0.95 --hm2foott 0.42 --hm2footin 0.25 --hm2footz1 1.1 --hm2footz0 -2.4 --hm2foottilt 12 '
+# Round 16 (owner review): U rims flush with the band face (no raised outline), shorter and wider points,
+# rounder inner band edges (1.0 mm side stones moved out a touch, cup bottoms raised to clear them).
+TUNED = ('--shtb 2.25 --cuflat 1 --cure 11.4 --cufl -2 --ri 0.6 --sri 0.6 --cubot 9.33 --shrib 1.0 '
+         '--hm2footv 1 --hm2footw 1.8 --hm2footd 0.95 --hm2foott 0.42 --hm2footin 0.25 --hm2footz1 1.1 --hm2footz0 -2.4 --hm2foottilt 12 '
          '--cua 1.5 --pitch3 3.3 --cue 0.42 --cufr 0.32 --shpn 12 --shrob 1.25 --shrib 0.8 --shdome 0 --shr0 128 --shr1 158 '
          '--prongst 1 --pitch3 3.2 --cua 1.42 --lift3 -0.15 --hm2foot 1 --hm2footz0 -2.7 --hm2footz1 1.1 --cure 11.55 --cufl 15 --sro 0.9 --cutipgap 0.35 --bzseg 12 '
          '--tilt3 0 --yoff3 0 --sht 2.92 --u3c 0.57 --u3r 1.45 --u3b 1.0 --u3f 0 --claw3 0 --scr 0 --scl 0.4 '
@@ -95,7 +98,7 @@ HP_ANG = float(arg('--hpang', 5)); HP_MAXL = float(arg('--hpmaxl', 0.18)); HP_NB
 HP_WB = float(arg('--hpwb', 0.36)); HP_H = float(arg('--hph', 0.2)); HP_RO = float(arg('--hpro', 0.3)); HP_DW = float(arg('--hpdw', 0.7)); HP_END = float(arg('--hpend', 0.3))
 HP_GY = float(arg('--hpgy', 0.1)); CU_A = float(arg('--cua', 1.35)); CU_B = float(arg('--cub', 1.05)); CU_RT = float(arg('--curt', 11.0)); CU_W = float(arg('--cuw', 0.22)); CU_RID = int(arg('--curid', 1)); CU_DROP = float(arg('--cudrop', 0.25)); HP_SHIFT = float(arg('--hpshift', 0.08)); CU_BOT = float(arg('--cubot', 9.6)); CU_FLUSH = int(arg('--cuflush', 1)); CU_SQ = int(arg('--cusq', 0)); CU_SOLID = int(arg('--cusolid', 0)); CU_E = float(arg('--cue', 0.46)); CU_FR = float(arg('--cufr', 0.28)); CU_Z = float(arg('--cuz', 0.004)); CU_FL = float(arg('--cufl', 0)); CU_RE = float(arg('--cure', 11.15)); CU_CR = float(arg('--cucr', 0.14)); CU_HALF = float(arg('--cuhalf', 0.35)); CU_RIB = int(arg('--curib', 0)); CU_HC = float(arg('--cuhc', 0.06)); CU_WB = float(arg('--cuwb', 0.18)); CU_FT = float(arg('--cuft', 0.12)); CU_PLZ = float(arg('--cuplz', 0.0)); CU_RO = float(arg('--curo', 0.3)); CU_RCUT = float(arg('--curcut', 10.45)); CU_PT = float(arg('--cupt', 0.8)); HP_SCMIN = float(arg('--hpscmin', 0.45)); HP_CR = float(arg('--hpcr', 0.36)); HP_WBT = float(arg('--hpwbt', 0.55)); HP_M0 = float(arg('--hpm0', 9.95)); HP_GD = float(arg('--hpgd', 0.3)); HP_GE = float(arg('--hpge', 0.3)); HP_M1 = float(arg('--hpm1', 10.25)); HP_W0 = float(arg('--hpw0', 10.25)); HP_W1 = float(arg('--hpw1', 10.85)); HP_G1 = float(arg('--hpg1', 0.05))
 SH_PN = int(arg('--shpn', 5)); SH_ROB = float(arg('--shrob', 0.5)); SH_RIB = float(arg('--shrib', 0.45)); SH_DOME = float(arg('--shdome', 0.0)); SH_R0 = float(arg('--shr0', 140)); SH_R1 = float(arg('--shr1', 165))
-RIM_CAPGAP = float(arg('--rimcapgap', 0.05)); CU_TIPGAP = float(arg('--cutipgap', 0.0))
+RIM_CAPGAP = float(arg('--rimcapgap', 0.05)); CU_TIPGAP = float(arg('--cutipgap', 0.0)); CU_FLAT = int(arg('--cuflat', 0))
 ENV_FLOOR = float(arg('--envfloor', 0.30)); ENV_STR = float(arg('--envstr', 1.8))
 SIDE_SPAN = radians(130)      # 1.0 mm side-wall rows run +/-130 deg over the top
 SIDE_R = 0.95                 # their centre, measured out from the inner surface
@@ -775,6 +778,8 @@ def build():
             # fillet (radius CU_FR) so the light itself draws the thin bright line. Top sits a hair above the band face.
             E_, R_, z_ = CU_E, CU_FR, CU_Z
             fp = [(-CU_WB, -0.02), (-CU_WB * 0.6, z_), (E_ - R_, z_)]
+            if CU_FLAT:   # round 16: the metal side tucks just under the band face, so the face runs flat to the U edge (no seam, no ridge)
+                fp = [(-CU_WB, -0.10), (-0.03, -0.015), (0.0, 0.0), (E_ - R_, 0.0)]; z_ = 0.0
             for i in range(1, 9):
                 th = radians(90 * i / 8); fp.append((E_ - R_ + R_ * sin(th), z_ - R_ + R_ * cos(th)))
             fp += [(E_, -HP_DW - R_), (0.05, -HP_DW - R_), (-CU_WB * 0.8, -0.05)]

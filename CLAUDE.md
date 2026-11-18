@@ -61,10 +61,10 @@ The model must match the original ring photo: four views on a grey background, l
 
 ## Open issues (as of the 2026-11-18 handover; update this list as you fix them)
 
-1. **Side gallery points** are now longer and closer to the stones (round 14), but still end in a small squared head; the photo's points taper to a narrower tip. See `renders/review_round14.png`.
+1. **Side gallery points**: since round 16 they are short and wide with flat ends, and the U edges sit flush with the band face (`--cuflat`), as the owner asked. See `renders/review_round16.png`.
 2. **Heart angle** is 56° (photo: 49°). The heart foot is a V prong since round 15 (`--hm2footv`); the owner rejected the round-14 flat bar.
 3. **Comfort groove** inside the band was removed to hold 8.2 g. Since round 15 the plain lower band has rounded inner edges (`--shrib`), which gives some comfort-fit feel.
 4. **Metal shading**: surfaces facing sideways (the heart channel walls, the front of the heart V prong) render near-black in the Cycles renders, while the photo shows them bright grey. The studio lighting needs more light from the sides.
-5. **Gallery images**: the front and top views now show crops of the reference photo. The on-hand image is still an old illustration.
+5. **Gallery images**: front, side, top and top side (three-quarter) views are crops of the reference photo. The on-hand image is still an old illustration.
 
-Outline match against the photo (IoU, 1.0 = perfect): front 0.879, side 0.936, top 0.936, three-quarter 0.937. The owner preferred wider U rims over the round-14 front score (0.895).
+Outline match against the photo (IoU, 1.0 = perfect): front 0.884, side 0.932, top 0.935, three-quarter 0.938 (round 16). The owner preferred wider U rims over the round-14 front score (0.895).
