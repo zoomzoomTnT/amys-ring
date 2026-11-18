@@ -1,0 +1,10 @@
+# npm installs for the viewer bundle (see CLAUDE.md)
+node_modules/
+package.json
+package-lock.json
+
+# Scratch output from build_ring.py --render and the comparison scripts.
+# The images worth keeping are copied into renders/.
+blender/*.png
+blender/cams.json
+overlay_report.json
