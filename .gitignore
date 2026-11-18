@@ -11,3 +11,9 @@ overlay_report.json
 
 # Build copy of the web model (the tracked one is site/ring.glb)
 blender/ring.glb
+
+# Scratch output in design folders (keepers are copied into designs/dN/renders/)
+designs/*/*.png
+designs/*/cams.json
+designs/*/ring.glb
+designs/*/overlay_report.json

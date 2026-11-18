@@ -2,7 +2,10 @@
 import sys, json, numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 PRE = sys.argv[1] if len(sys.argv) > 1 else 'render_'
-ref = Image.open('reference_original.jpg').convert('RGB'); W, H = ref.size
+import os
+# optional overlay_config.json in the current directory (other designs): {"ref": file, "quads": {view: [x0, y0, x1, y1]}}
+CFG = json.load(open('overlay_config.json')) if os.path.exists('overlay_config.json') else {}
+ref = Image.open(CFG.get('ref', 'reference_original.jpg')).convert('RGB'); W, H = ref.size
 a = np.array(ref).astype(int)
 red = (a[..., 0] > 170) & (a[..., 1] < 140) & (a[..., 2] < 140)
 red = np.array(Image.fromarray((red * 255).astype('uint8')).filter(ImageFilter.MaxFilter(15))) > 0
@@ -11,6 +14,7 @@ if len(xs): a[ys.min():ys.max() + 1, xs.min():xs.max() + 1] = [128, 128, 128]  #
 ref = Image.fromarray(a.astype('uint8'))
 mx, my = int(W * 0.488), int(H * 0.452)
 quads = {'top': (0, 0, mx, my), 'three_quarter': (mx, 0, W, my), 'front': (0, my, mx, H), 'side': (mx, my, W, H)}
+if 'quads' in CFG: quads = {k: tuple(v) for k, v in CFG['quads'].items()}
 cams = json.load(open('cams.json'))
 def mask(im, thr=28):
     b = np.array(im).astype(int)

@@ -2,6 +2,11 @@
 
 Each design update gets a new version and a matching git tag (`vX.Y`).
 
+## v2.0 — 2026-11-18
+- New owner design, **Design #2**, shown alongside design #1. The Details panel is now "Design #N Details" with a switcher between the designs (`?design=2` opens design #2 directly); each design has its own 3D model, details and photos.
+- Design #2: the same 15.68 ct oval centre on a four-claw head with a pave gallery rail (26 × 1.3 mm), and 8 oval side stones (≈ 0.7 ct each, 6.7 × 4.5 mm to match the owner's picture) in shared claws on an open band; accents 5.86 ct, 18K white gold 8.59 g (target 8.6 g), size 5.5, GLB 2.05 MB. Outline IoU against the owner's picture: front 0.909, side 0.931, top 0.964, three-quarter 0.922. Sheet: `designs/d2/renders/review_d2_round1.png`.
+- Each design's files and notes are kept together: `designs/README.md` (index), `designs/d1/DESIGN.md`, `designs/d2/` (picture, build script, Blender file, STL, stats, renders, `DESIGN.md`).
+
 ## v1.0 — 2026-11-10
 - 3D ring viewer (three.js, ray-traced diamonds, no purple tint), phone-friendly.
 - Split Reset View button with front view, top view and on-hand photo.

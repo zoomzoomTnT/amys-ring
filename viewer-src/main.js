@@ -147,7 +147,7 @@ const TIERS = {
   basic: { big: 0, small: 0, chroma: false, pr: 1.5, cube: 256 },
 };
 
-export function startViewer({ container, src, onProgress, onLoad, onInteract, onFail, onQuality }) {
+export function startViewer({ container, src, bytes, onProgress, onLoad, onInteract, onFail, onQuality }) {
   const qs = new URLSearchParams(location.search);
   // debug/QA flags: ?still (no auto-rotate), ?mask (flat diamond mask), ?q=full|lite|basic, ?fail=webgl|load|shader
   const STILL = qs.has('still') || qs.has('mask'), MASK = qs.has('mask');
@@ -290,7 +290,7 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract, on
     ready = true;
     onLoad && onLoad();
   }, (e) => {
-    const total = e.total || GLB_BYTES;
+    const total = e.total || bytes || GLB_BYTES;
     onProgress && onProgress(Math.min(0.98, e.loaded / total));
   }, (err) => fail('load', err));
 

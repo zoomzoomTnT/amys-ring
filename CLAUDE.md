@@ -19,6 +19,19 @@ Live site: https://amysring.duckdns.org
 - **Never copy files to the server by hand.** Deploys happen only through a push to `main` (see Deploy below).
 - **Verify the live site after each deploy** at desktop and phone widths.
 
+## Designs (v2.0 and up)
+
+- Two designs now live side by side; `designs/README.md` is the index and each design's `DESIGN.md` is its memory
+  (spec, tuned settings, final numbers, owner decisions, open issues). Read it before touching a design and update it
+  at the end of every round.
+- Design #1: everything below under Reference photo / Commands (files in `blender/`, `site/ring.glb`, `site/gallery/`).
+- Design #2: `designs/d2/` (picture `reference.jpg`, `build_ring_d2.py`, outputs next to it), web files in `site/d2/`.
+  Build: `blender -b -P designs/d2/build_ring_d2.py -- --render`. Compare: `cd designs/d2 && python3 ../../blender/overlay_views.py`.
+  Its hard limits: gold about 8.6 g, 8 ovals + 26 × 1.3 mm + centre, size 5.5, GLB at 3.5 MB or less.
+- The site picks the design from `?design=N`; per-design model, specs and photos are the `DESIGNS` table in `site/index.html`.
+  When a design's GLB changes, update its `bytes` there.
+- The "Hard limits" and "Open issues" sections below are design #1's.
+
 ## Reference photo
 
 The model must match the original ring photo: four views on a grey background, labelled "18K White Gold 8.2g / size: 5.5".

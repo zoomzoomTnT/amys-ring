@@ -270,6 +270,16 @@
       -webkit-backdrop-filter: blur(16px);
     }
 
+    /* design switcher at the top of the Details panel */
+    .design-switch { display: flex; gap: 0.4rem; margin: 0 0 0.8rem; }
+    .design-switch button {
+      appearance: none; flex: 1; font: inherit; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--ink); background: transparent; border: 1px solid var(--line);
+      border-radius: 999px; padding: 0.5rem 0.6rem; cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    .design-switch button[aria-pressed="true"] { background: var(--ink); color: #fffffd; border-color: var(--ink); cursor: default; }
+    .design-switch button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
     .spec-body dl {
       display: grid;
       grid-template-columns: max-content minmax(0, 1fr);
@@ -420,39 +430,22 @@
 
   <footer class="chrome">
     <details class="specs" id="specs">
-      <summary>Details</summary>
+      <summary id="specs-title">Design #1 Details</summary>
       <div class="spec-body">
-        <dl>
-          <dt>Metal</dt>
-          <dd>18K White Gold</dd>
-          <dt>Gold weight</dt>
-          <dd>approx. 8.2 g<span class="note">18K white gold, metal only</span></dd>
-          <dt>Total weight</dt>
-          <dd>approx. 12.2 g (est.)<span class="note">8.2 g gold + 20.03 ct diamonds (&asymp; 4.0 g)</span></dd>
-          <dt>Size</dt>
-          <dd>5.5</dd>
-          <dt>Center</dt>
-          <dd>15.68 ct lab-grown oval<span class="note">D color, VVS1 &middot; IGI LG843655695</span></dd>
-          <dt>Accents</dt>
-          <dd>approx. 4.35 ct total</dd>
-        </dl>
+        <div class="design-switch" id="design-switch" role="group" aria-label="Choose a design"></div>
+        <dl id="spec-list"></dl>
       </div>
     </details>
     <div class="split" id="split">
       <button type="button" id="reset">Reset view</button>
       <button type="button" id="views-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="views-menu" aria-label="More views"><span class="chev" aria-hidden="true">&#9652;</span></button>
       <ul class="views-menu" id="views-menu" role="menu" aria-label="Views" hidden>
-        <li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-index="0">Front view</button></li>
-        <li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-index="1">Side view</button></li>
-        <li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-index="2">Top view</button></li>
-        <li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-index="3">Top side view</button></li>
-        <li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-index="4">On hand</button></li>
       </ul>
     </div>
   </footer>
 
   <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo">
-    <div class="lb-top"><span id="lb-count">1 / 5</span><button type="button" class="lb-close" id="lb-close" aria-label="Close">&times;</button></div>
+    <div class="lb-top"><span id="lb-count"></span><button type="button" class="lb-close" id="lb-close" aria-label="Close">&times;</button></div>
     <div class="lb-track" id="lb-track"></div>
   </div>
 
@@ -460,17 +453,69 @@
 
     // One easy-to-edit title. Change this string only.
     const SITE_TITLE = "Amy's Ring";
-    const IMAGES = [
-      { src: "./gallery/front.webp", title: "Front view", caption: "Original design", render: false },
-      { src: "./gallery/side.webp", title: "Side view", caption: "Original design", render: false },
-      { src: "./gallery/top.webp", title: "Top view", caption: "Original design", render: false },
-      { src: "./gallery/three_quarter.webp", title: "Top side view", caption: "Original design", render: false },
-      { src: "./gallery/on_hand.webp", title: "On hand", caption: "Illustration", render: false },
-    ];
+    // ---- designs: each keeps its own model, details and photos (sources live in designs/dN/ in the repo)
+    const DESIGNS = {
+      1: {
+        label: "Design #1", model: "./ring.glb", bytes: 3206432,
+        specs: [
+          ["Metal", "18K White Gold"],
+          ["Gold weight", "approx. 8.2 g", "18K white gold, metal only"],
+          ["Total weight", "approx. 12.2 g (est.)", "8.2 g gold + 20.03 ct diamonds (&asymp; 4.0 g)"],
+          ["Size", "5.5"],
+          ["Center", "15.68 ct lab-grown oval", "D color, VVS1 &middot; IGI LG843655695"],
+          ["Accents", "approx. 4.35 ct total", "2 heart side stones and 146 small round diamonds"],
+        ],
+        images: [
+          { id: "front", src: "./gallery/front.webp", title: "Front view", caption: "Original design", render: false },
+          { id: "side", src: "./gallery/side.webp", title: "Side view", caption: "Original design", render: false },
+          { id: "top", src: "./gallery/top.webp", title: "Top view", caption: "Original design", render: false },
+          { id: "topside", src: "./gallery/three_quarter.webp", title: "Top side view", caption: "Original design", render: false },
+          { id: "hand", src: "./gallery/on_hand.webp", title: "On hand", caption: "Illustration", render: false },
+        ],
+      },
+      2: {
+        label: "Design #2", model: "./d2/ring.glb", bytes: 2048888,
+        specs: [
+          ["Metal", "18K White Gold"],
+          ["Gold weight", "approx. 8.6 g", "18K white gold, metal only"],
+          ["Total weight", "approx. 12.9 g (est.)", "8.6 g gold + 21.54 ct diamonds (&asymp; 4.3 g)"],
+          ["Size", "5.5"],
+          ["Center", "15.68 ct lab-grown oval", "D color, VVS1 &middot; IGI LG843655695"],
+          ["Accents", "approx. 5.86 ct total", "8 oval side stones (&asymp; 0.7 ct each) &middot; 26 &times; 1.3 mm rounds (&asymp; 0.01 ct each)"],
+        ],
+        images: [
+          { id: "front", src: "./d2/gallery/front.webp", title: "Front view", caption: "Design #2", render: false },
+          { id: "side", src: "./d2/gallery/side.webp", title: "Side view", caption: "Design #2", render: false },
+          { id: "top", src: "./d2/gallery/top.webp", title: "Top view", caption: "Design #2", render: false },
+          { id: "topside", src: "./d2/gallery/three_quarter.webp", title: "Top side view", caption: "Design #2", render: false },
+        ],
+      },
+    };
+    const qsDesign = new URLSearchParams(location.search).get("design");
+    const DESIGN_ID = DESIGNS[qsDesign] ? +qsDesign : 1;
+    const DESIGN = DESIGNS[DESIGN_ID];
+    const IMAGES = DESIGN.images;
 
     const $ = (id) => document.getElementById(id);
     $("site-title").textContent = SITE_TITLE;
-    document.title = SITE_TITLE;
+    document.title = DESIGN_ID === 1 ? SITE_TITLE : SITE_TITLE + " - " + DESIGN.label;
+
+    // Details panel: title, design switcher, spec list
+    $("specs-title").textContent = DESIGN.label + " Details";
+    $("spec-list").innerHTML = DESIGN.specs.map(([k, v, note]) =>
+      "<dt>" + k + "</dt><dd>" + v + (note ? '<span class="note">' + note + "</span>" : "") + "</dd>").join("");
+    $("design-switch").innerHTML = Object.entries(DESIGNS).map(([id, d]) =>
+      '<button type="button" data-design="' + id + '" aria-pressed="' + (+id === DESIGN_ID) + '">' + d.label + "</button>").join("");
+    $("design-switch").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-design]");
+      if (!b || +b.dataset.design === DESIGN_ID) return;
+      const u = new URL(location.href);
+      if (+b.dataset.design === 1) u.searchParams.delete("design"); else u.searchParams.set("design", b.dataset.design);
+      u.hash = ""; location.href = u.toString();
+    });
+    // views menu: one entry per photo of this design
+    $("views-menu").innerHTML = IMAGES.map((im, i) =>
+      '<li role="none"><button type="button" role="menuitemradio" aria-checked="false" data-index="' + i + '">' + im.title + "</button></li>").join("");
 
     const stage = $("stage"), progress = $("progress"), progressFill = $("progress-fill");
     const hint = $("hint"), specs = $("specs");
@@ -504,7 +549,7 @@
         if (no3d) return;
         viewer = startViewer({
           container: $("viewer"),
-          src: "./ring.glb",
+          src: DESIGN.model, bytes: DESIGN.bytes,
           onProgress: (a) => { progressFill.style.transform = "scaleX(" + a + ")"; },
           onLoad: () => { loaded3d = true; progressFill.style.transform = "scaleX(1)"; progress.classList.add("is-hidden"); },
           onInteract: () => { userInteracted = true; syncHint(); },
@@ -621,8 +666,9 @@
       if (e.key === "Escape") closeMenu(true);
     });
 
-    // deep links for sharing / testing: #front, #side, #top, #topside, #hand, #menu
-    const views = { "#front": 0, "#side": 1, "#top": 2, "#topside": 3, "#hand": 4 };
+    // deep links for sharing / testing: ?design=2, #front, #side, #top, #topside, #hand, #menu, #details
+    const views = Object.fromEntries(IMAGES.map((im, i) => ["#" + im.id, i]));
+    if (location.hash === "#details") specs.open = true;
     if (location.hash in views) setMode(views[location.hash]);
     if (location.hash === "#menu") openMenu(false);
     syncHint();
