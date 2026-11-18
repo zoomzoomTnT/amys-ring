@@ -16,7 +16,8 @@ jobs:
 
       - name: Check the site files are there
         run: |
-          for f in index.html viewer.js ring.glb gallery/front.webp gallery/top.webp gallery/on_hand.webp; do
+          for f in index.html viewer.js d1/ring.glb d1/gallery/front.webp d1/gallery/top.webp d1/gallery/on_hand.webp \
+                   d2/ring.glb d2/gallery/front.webp d2/gallery/top.webp; do
             test -s "site/$f" || { echo "Missing site/$f"; exit 1; }
           done
 
@@ -44,5 +45,6 @@ jobs:
       - name: Check the live site
         run: |
           curl -fsS -o /dev/null https://amysring.duckdns.org/
-          curl -fsS -o /dev/null https://amysring.duckdns.org/ring.glb
+          curl -fsS -o /dev/null https://amysring.duckdns.org/d1/ring.glb
+          curl -fsS -o /dev/null https://amysring.duckdns.org/d2/ring.glb
           echo "Live site OK"

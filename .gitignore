@@ -1,19 +1,16 @@
-# npm installs for the viewer bundle (see CLAUDE.md)
+# Scratch output of every design (renders, cams.json, the web GLB, overlays, trial blends, old versions pulled
+# with tools/get_version.py). Keepers are copied out by tools/publish.py: model/ and renders/ are committed.
+designs/*/build/
+
+# Blender's automatic backups ("Save Versions" preference): git already keeps every version
+*.blend1
+*.blend2
+
+# Python caches
+__pycache__/
+*.pyc
+
+# npm installs for the viewer bundle (make viewer)
 node_modules/
 package.json
 package-lock.json
-
-# Scratch output from build_ring.py --render and the comparison scripts.
-# The images worth keeping are copied into renders/.
-blender/*.png
-blender/cams.json
-overlay_report.json
-
-# Build copy of the web model (the tracked one is site/ring.glb)
-blender/ring.glb
-
-# Scratch output in design folders (keepers are copied into designs/dN/renders/)
-designs/*/*.png
-designs/*/cams.json
-designs/*/ring.glb
-designs/*/overlay_report.json

@@ -9,7 +9,7 @@
 # sessions if it finishes in under about five minutes.
 set -euo pipefail
 
-BLENDER_VERSION=4.2.23   # Blender 4.2 LTS, the version build_ring.py was written for
+BLENDER_VERSION=4.2.23   # Blender 4.2 LTS, the version the build scripts (designs/*/build.py) target
 BLENDER_URL="https://download.blender.org/release/Blender4.2/blender-${BLENDER_VERSION}-linux-x64.tar.xz"
 
 if ! /opt/blender/blender --version 2>/dev/null | grep -q "Blender ${BLENDER_VERSION}"; then
@@ -28,7 +28,7 @@ if ! /opt/blender/blender --version 2>/dev/null | grep -q "Blender ${BLENDER_VER
   ln -sf /opt/blender/blender /usr/local/bin/blender
 fi
 
-# Pillow and numpy for the comparison scripts in blender/ (run with system python3).
+# Pillow and numpy for the comparison scripts in tools/ (run with system python3).
 python3 -m pip install --quiet --break-system-packages pillow numpy
 
 blender --version | head -n 1

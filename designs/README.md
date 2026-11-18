@@ -1,32 +1,38 @@
 # Designs
 
-Each design of Amy's ring keeps its own reference image, build script, Blender file, measurements and notes, so any of
-them can be reopened, rebuilt or compared later. The site shows them all; the **Details** panel has a switcher
-(`?design=2` in the URL opens design #2 directly).
+One folder per design. Everything about a design lives inside its folder, so any design can be reopened, rebuilt or
+compared later. The site shows all of them; the Details panel switches between designs (`?design=N` in the URL).
 
-| Design | Version | Status | Reference | Build script | Site files |
+| Design | What | Version | Rounds | Notes and history | Site files |
 |---|---|---|---|---|---|
-| #1 | v1.0 (refinement rounds 1-16) | live | `blender/reference_original.jpg` | `blender/build_ring.py` | `site/ring.glb`, `site/gallery/` |
-| #2 | v2.0 | live | `designs/d2/reference.jpg` | `designs/d2/build_ring_d2.py` | `site/d2/ring.glb`, `site/d2/gallery/` |
+| [#1](d1/) | Heart shoulders: hearts in V-prong baskets, 14 × 3.0 mm stones in U holders, pave | v1.0 | 16 (+13b) | [d1/DESIGN.md](d1/DESIGN.md) | `site/d1/` |
+| [#2](d2/) | 8 oval side stones in shared claws on a thin round band, pave gallery rail | v2.0 | 2 | [d2/DESIGN.md](d2/DESIGN.md) | `site/d2/` |
 
-Per-design notes (spec, tuned settings, final numbers, open issues, how to rebuild):
-- [`d1/DESIGN.md`](d1/DESIGN.md)
-- [`d2/DESIGN.md`](d2/DESIGN.md)
+Both use the same 15.68 ct lab-grown oval centre stone (IGI LG843655695), ring size 5.5, 18K white gold.
 
-## What each design folder holds
+## Inside a design folder
 
-- `reference.jpg` (or, for design #1, `blender/reference_original.jpg`): the owner's picture. Never edit it.
-- The build script. Its tuned settings are baked in (`TUNED` / `D2_TUNED`), so a plain run reproduces the committed model.
-- `ring.blend` (Blender scene), `ring.stl` (metal only, mm), `ring.glb` (web model), `stats.json` (gold weight, stone counts).
-- `renders/`: the committed renders, outline overlays and review sheets for each round.
-- `DESIGN.md`: the design's memory. Update it at the end of every round.
+| Path | What | In git? |
+|---|---|---|
+| `DESIGN.md` | The design's memory: spec, owner decisions, round table (round -> commit), numbers, open issues | yes |
+| `reference/original.jpg` | The owner's picture. Never edit, crop or replace it | yes |
+| `reference/overlay.json` | Where each view (top, three-quarter, front, side) sits in the picture | yes |
+| `reference/review_boxes.json` | Named close-ups used by `tools/review_sheet.py` | yes |
+| `build.py` | Blender build script. Tuned settings baked into `TUNED` (newest round first; first match wins) | yes |
+| `limits.json` | Hard limits checked by `tools/publish.py` | yes |
+| `model/` | `ring.blend`, `ring.stl` (metal only, mm), `stats.json` from the last full build | yes |
+| `renders/current/` | Latest renders, outline overlays, `overlay_report.json`, `cams.json` | yes |
+| `renders/rounds/` | One review sheet per round (`rNN-review.png` and extra close-ups) | yes |
+| `tools/` | Design-specific helper scripts (design #1 only) | yes |
+| `build/` | Scratch: renders, web GLB, overlays, trial blends, old versions pulled out of git | no |
 
 ## Adding a design
 
-1. Make `designs/dN/` with the owner's picture as `reference.jpg` and an `overlay_config.json` that marks where each
-   view sits in the picture (see `d2/`).
-2. Start from `d2/build_ring_d2.py`: it loads design #1's helpers from `blender/build_ring.py` and only replaces the
-   geometry. Run it from the repo root; outputs land next to the script.
-3. Copy `ring.glb` to `site/dN/ring.glb`, crop the gallery photos into `site/dN/gallery/`, and add an entry to
-   `DESIGNS` in `site/index.html` (set `bytes` to the GLB's exact size).
-4. An owner design is a new major version: CHANGELOG entry, git tag `vN.0`.
+1. Copy `d2/` as `dN/` and drop `model/`, `renders/` and the round history from `DESIGN.md`.
+2. Put the owner's picture in `reference/original.jpg`; mark the four views in `reference/overlay.json` and some
+   close-ups in `reference/review_boxes.json`; set `limits.json`.
+3. Rewrite `build()` in `build.py` (the shared helpers come from `lib/ringkit.py`); iterate with `make trial D=N`
+   and `make compare D=N`.
+4. Add the design to `PATHS` in `tools/get_version.py`, give it a `site/dN/` folder and an entry in `DESIGNS` in
+   `site/index.html`, then `make build D=N` and `make publish D=N`.
+5. An owner design is a new major version: CHANGELOG entry and git tag `vN.0` (`tools/tag_versions.sh`).

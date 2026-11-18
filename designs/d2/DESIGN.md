@@ -1,6 +1,7 @@
-# Design #2: state after round 2 (v2.0)
+# Design #2: oval side stones (v2.0)
 
-Added 2026-11-18 from the owner's picture `reference.jpg` (four views on grey: three-quarter, top, front, side).
+State: round 2, last changed 2026-11-18 (commit `0541137`). Live as Design #2 on the site.
+Added 2026-11-18 from the owner's picture `reference/original.jpg` (four views on grey: three-quarter, top, front, side).
 
 ## Spec (from the owner)
 - Centre: the same 15.68 ct lab-grown oval as design #1 (19.22 × 12.83 × 8.17 mm, D VVS1, IGI LG843655695).
@@ -19,18 +20,23 @@ Added 2026-11-18 from the owner's picture `reference.jpg` (four views on grey: t
   cradle under each oval dips toward the band (the U arcs in the front view). The head claws land on the narrow band top.
 
 ## Files
-- `reference.jpg`: owner's picture (never edit). `overlay_config.json`: where each view sits in it.
-- `build_ring_d2.py`: build script. It loads design #1's helpers from `blender/build_ring.py` (`--nobuild`) and replaces
-  the geometry. Tuned settings: the `D2_TUNED` string (command-line values win).
-- `ring.blend`, `ring.stl` (metal only, mm), `stats.json`; web model `site/d2/ring.glb` (2.10 MB).
+- Reference: `reference/original.jpg` (owner's picture, never edit), `reference/overlay.json` (where each view sits
+  in it), `reference/review_boxes.json` (close-ups for review sheets).
+- Build script: `build.py` (design #2's geometry and settings; shared helpers in `lib/ringkit.py`). Tuned settings:
+  the `TUNED` string near the top, newest round first (the first match wins; command-line values beat it).
+- Model: `model/ring.blend`, `model/ring.stl` (metal only, mm), `model/stats.json`; web model `site/d2/ring.glb` (2.10 MB).
 - Gallery photos (crops of the picture): `site/d2/gallery/`.
-- `renders/`: renders, outline overlays, `review_d2_round1.png` (picture vs model, every view) and `review_d2_round2.png`.
+- Renders: `renders/current/` (latest renders + overlays), `renders/rounds/r01-review.png` (picture vs model, every
+  view) and `r02-review.png` (picture vs round 1 vs round 2).
+- Hard limits: `limits.json` (checked by `make limits D=2`; gold is informational, see owner decisions).
 
 ## Rebuild and compare
 ```
-blender -b -P designs/d2/build_ring_d2.py -- --render     # ~15 min; quick trial: --fast --render --res 900 --samples 16 --views front,side
-cd designs/d2 && python3 ../../blender/overlay_views.py    # reads overlay_config.json -> overlay_*.png, IoU
-cp designs/d2/ring.glb site/d2/ring.glb                    # then set bytes: <size> for design 2 in site/index.html
+make trial D=2      # quick front + side trial (~1 min), never touches model/
+make build D=2      # = blender -b -P designs/d2/build.py -- --render   (~15 min)
+make compare D=2    # outline overlays + IoU vs the picture
+make review D=2     # review sheet: picture | committed | this build
+make publish D=2    # check limits, copy the GLB to site/d2/ and the renders to renders/current/
 ```
 
 ## Owner decisions
@@ -41,11 +47,19 @@ cp designs/d2/ring.glb site/d2/ring.glb                    # then set bytes: <si
 
 ## Round 2 numbers
 - Model gold 5.19 g (site shows the owner's 8.6 g), inner diameter 16.10 mm (size 5.5), GLB 2.10 MB; 8 ovals, 26 × 1.3 mm, centre; no collisions.
-- Outline IoU: front 0.900, side 0.931, top 0.952, three-quarter 0.931. Sheet: `renders/review_d2_round2.png` (picture vs round 1 vs round 2).
+- Outline IoU: front 0.900, side 0.931, top 0.952, three-quarter 0.931. Sheet: `renders/rounds/r02-review.png` (picture vs round 1 vs round 2).
 
 ## Round 1 numbers
 - Gold 8.59 g, inner diameter 16.10 mm (size 5.5), GLB 2.05 MB; stones: 8 ovals, 26 × 1.3 mm, centre. No collisions.
 - Outline IoU: front 0.909, side 0.931, top 0.964, three-quarter 0.922.
+
+## Round history
+Get any round's files with `make version D=2 REV=<commit>`. Tags (`d2-rNN`) are created by `tools/tag_versions.sh`.
+
+| Round | Commit | Date | What changed | Review sheet |
+|---|---|---|---|---|
+| r01 | `053e2de` (v2.0) | 2026-11-18 | First model from the owner's picture; design switcher added to the site | `r01-review.png` |
+| r02 | `0541137` | 2026-11-18 | Owner review: thin round band (~3 mm), claw feet outside the band | `r02-review.png` |
 
 ## Open issues / next refinements
 1. Front view: the picture's band claws look a little thicker and the ovals fill the gaps between claws more fully.

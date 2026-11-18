@@ -1,0 +1,82 @@
+{
+ "top": {
+  "iou": 0.952,
+  "mm_per_px": 0.0578,
+  "width_mm_ref": 23.99,
+  "width_mm_model": 24.1,
+  "height_mm_ref": 19.36,
+  "height_mm_model": 19.13,
+  "ref_truncated": false,
+  "outline_mismatch_px": 4445,
+  "xor_area_mm2": 12.9,
+  "fit_s": 0.28251366277067214,
+  "fit_ox": -2,
+  "fit_oy": 1,
+  "quad": [
+   545,
+   150,
+   1000,
+   575
+  ]
+ },
+ "three_quarter": {
+  "iou": 0.931,
+  "mm_per_px": 0.0589,
+  "width_mm_ref": 23.87,
+  "width_mm_model": 23.69,
+  "height_mm_ref": 21.16,
+  "height_mm_model": 21.22,
+  "ref_truncated": false,
+  "outline_mismatch_px": 5360,
+  "xor_area_mm2": 20.6,
+  "fit_s": 0.3945098291078606,
+  "fit_ox": 10,
+  "fit_oy": 81,
+  "quad": [
+   0,
+   150,
+   545,
+   880
+  ]
+ },
+ "front": {
+  "iou": 0.9,
+  "mm_per_px": 0.059,
+  "width_mm_ref": 24.53,
+  "width_mm_model": 24.18,
+  "height_mm_ref": 27.72,
+  "height_mm_model": 28.07,
+  "ref_truncated": false,
+  "outline_mismatch_px": 10262,
+  "xor_area_mm2": 27.4,
+  "fit_s": 0.32183480679721277,
+  "fit_ox": -33,
+  "fit_oy": -3,
+  "quad": [
+   545,
+   575,
+   1000,
+   1296
+  ]
+ },
+ "side": {
+  "iou": 0.931,
+  "mm_per_px": 0.0587,
+  "width_mm_ref": 19.6,
+  "width_mm_model": 19.13,
+  "height_mm_ref": 27.58,
+  "height_mm_model": 28.05,
+  "ref_truncated": false,
+  "outline_mismatch_px": 5382,
+  "xor_area_mm2": 15.8,
+  "fit_s": 0.32342636148424064,
+  "fit_ox": -69,
+  "fit_oy": 0,
+  "quad": [
+   1000,
+   575,
+   1520,
+   1296
+  ]
+ }
+}

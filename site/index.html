@@ -453,10 +453,11 @@
 
     // One easy-to-edit title. Change this string only.
     const SITE_TITLE = "Amy's Ring";
-    // ---- designs: each keeps its own model, details and photos (sources live in designs/dN/ in the repo)
+    // ---- designs: each keeps its own model, details and photos in site/dN/ (sources live in designs/dN/ in the repo).
+    // tools/publish.py updates `bytes` when a design's ring.glb changes.
     const DESIGNS = {
       1: {
-        label: "Design #1", model: "./ring.glb", bytes: 3206432,
+        label: "Design #1", model: "./d1/ring.glb", bytes: 3206432,
         specs: [
           ["Metal", "18K White Gold"],
           ["Gold weight", "approx. 8.2 g", "18K white gold, metal only"],
@@ -466,11 +467,11 @@
           ["Accents", "approx. 4.35 ct total", "2 heart side stones and 146 small round diamonds"],
         ],
         images: [
-          { id: "front", src: "./gallery/front.webp", title: "Front view", caption: "Original design", render: false },
-          { id: "side", src: "./gallery/side.webp", title: "Side view", caption: "Original design", render: false },
-          { id: "top", src: "./gallery/top.webp", title: "Top view", caption: "Original design", render: false },
-          { id: "topside", src: "./gallery/three_quarter.webp", title: "Top side view", caption: "Original design", render: false },
-          { id: "hand", src: "./gallery/on_hand.webp", title: "On hand", caption: "Illustration", render: false },
+          { id: "front", src: "./d1/gallery/front.webp", title: "Front view", caption: "Original design", render: false },
+          { id: "side", src: "./d1/gallery/side.webp", title: "Side view", caption: "Original design", render: false },
+          { id: "top", src: "./d1/gallery/top.webp", title: "Top view", caption: "Original design", render: false },
+          { id: "topside", src: "./d1/gallery/three_quarter.webp", title: "Top side view", caption: "Original design", render: false },
+          { id: "hand", src: "./d1/gallery/on_hand.webp", title: "On hand", caption: "Illustration", render: false },
         ],
       },
       2: {

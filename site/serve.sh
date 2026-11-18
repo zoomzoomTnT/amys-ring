@@ -8,8 +8,8 @@
 # Local preview:
 #   ./serve.sh 8080
 #
-# To use the finished Blender model, replace ring.glb in this folder
-# with the real file (for example copy /workspace/ring/ring.glb here).
+# Each design's model and photos live in d1/, d2/ ...; tools/publish.py copies a
+# new build's ring.glb into place (see README.md).
 set -euo pipefail
 PORT="${1:-80}"
 DIR="$(cd "$(dirname "$0")" && pwd)"

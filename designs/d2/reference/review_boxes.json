@@ -1,0 +1,8 @@
+[
+ {"title": "Front view", "view": "front", "box": [0, 0, 455, 520]},
+ {"title": "Side view", "view": "side", "box": [0, 0, 420, 520]},
+ {"title": "Band and claws, front close-up", "view": "front", "box": [0, 150, 200, 460]},
+ {"title": "Band and claws, side close-up", "view": "side", "box": [100, 200, 330, 520]},
+ {"title": "Top view", "view": "top", "box": [0, 30, 455, 420]},
+ {"title": "Top side view", "view": "three_quarter", "box": [60, 150, 545, 580]}
+]

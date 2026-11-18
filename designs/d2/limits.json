@@ -1,0 +1,7 @@
+{
+ "_note": "Hard limits checked by tools/publish.py. Gold is informational only: the owner keeps showing 8.6 g although the thin-band model weighs ~5.2 g (round 2 decision, see DESIGN.md).",
+ "gold_g": null,
+ "inner_diameter_mm": [16.05, 16.15],
+ "glb_max_mb": 3.5,
+ "stones": {"oval 6.7x4.5": 8, "round 1.3": 26}
+}

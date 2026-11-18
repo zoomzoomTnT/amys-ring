@@ -1,6 +1,6 @@
 # Amy's Ring: notes for Claude
 
-A 3D model of Amy's 18K white gold engagement ring, built in Blender from a reference photo and shown on a phone-friendly three.js page.
+3D models of Amy's 18K white gold engagement ring, built in Blender from the owner's pictures and shown on a phone-friendly three.js page.
 Live site: https://amysring.duckdns.org
 
 ## Owner's rules (zoomzoom): follow these exactly
@@ -12,59 +12,80 @@ Live site: https://amysring.duckdns.org
   - Once v2 exists, add a version switcher to the site.
 - **Compare every refinement round closely against the reference photo**: side-by-side zooms plus per-view outline overlays with IoU scores. Show the images to the owner so they can point at problems precisely.
 - **Hard limits** (check them before every commit):
-  - Gold weight about 8.2 g (`est_weight_g_18kw_14_7` in `blender/stats.json`).
-  - `site/ring.glb` at 3.5 MB or less.
+  - Gold weight about 8.2 g (`est_weight_g_18kw_14_7` in `designs/d1/model/stats.json`).
+  - `site/d1/ring.glb` at 3.5 MB or less.
   - Stone counts unchanged: centre stone, 2 hearts, 14 × 3.0 mm, 62 × 1.0 mm, 32 × 1.3 mm, 16 × 1.2 mm, 22 × 1.4 mm.
   - Ring size 5.5.
 - **Never copy files to the server by hand.** Deploys happen only through a push to `main` (see Deploy below).
 - **Verify the live site after each deploy** at desktop and phone widths.
 
-## Designs (v2.0 and up)
+The hard limits above are design #1's. Every design's limits are in `designs/dN/limits.json`; `make limits D=N`
+checks them and `make publish D=N` refuses to publish a build that breaks them.
 
-- Two designs now live side by side; `designs/README.md` is the index and each design's `DESIGN.md` is its memory
-  (spec, tuned settings, final numbers, owner decisions, open issues). Read it before touching a design and update it
-  at the end of every round.
-- Design #1: everything below under Reference photo / Commands (files in `blender/`, `site/ring.glb`, `site/gallery/`).
-- Design #2: `designs/d2/` (picture `reference.jpg`, `build_ring_d2.py`, outputs next to it), web files in `site/d2/`.
-  Build: `blender -b -P designs/d2/build_ring_d2.py -- --render`. Compare: `cd designs/d2 && python3 ../../blender/overlay_views.py`.
-  Its hard limits: 8 ovals + 26 × 1.3 mm + centre, size 5.5, GLB at 3.5 MB or less, thin round band (~3 mm). The site shows
-  the owner's 8.6 g gold spec although the thin-band model weighs ~5.2 g (owner decision, round 2): don't bulk it up to 8.6 g.
-- The site picks the design from `?design=N`; per-design model, specs and photos are the `DESIGNS` table in `site/index.html`.
-  When a design's GLB changes, update its `bytes` there.
-- The "Hard limits" and "Open issues" sections below are design #1's.
+## Repository layout (reorganized 2026-11-18)
 
-## Reference photo
+- `README.md` is the map; `designs/README.md` indexes the designs; `docs/VERSIONING.md` explains how versions are kept.
+- One folder per design, `designs/dN/`: `DESIGN.md` (the design's memory: spec, owner decisions, round -> commit
+  table, numbers, open issues; read it before touching the design and update it at the end of every round),
+  `reference/` (owner's picture + view boxes + review close-ups), `build.py`, `limits.json`, `model/` (committed
+  ring.blend, ring.stl, stats.json), `renders/current/` and `renders/rounds/` (committed), `build/` (scratch, ignored).
+- `lib/ringkit.py`: Blender helpers shared by all designs (stones, seats, materials, scene, cameras, union/STL/GLB
+  export). A design's `build.py` sets `DESIGN_DIR` and `TUNED`, exec()s ringkit, then defines `build()` and
+  `collision_report()`. Changing ringkit changes every design: rebuild all of them and compare stats/GLB hashes.
+- `tools/`: `overlay_views.py`, `zoom_compare.py`, `review_sheet.py`, `publish.py`, `get_version.py`,
+  `tag_versions.sh`. Each prints its usage when run without arguments. Design #1's older helpers: `designs/d1/tools/`.
+- `site/`: deployed as is; `site/d1/` and `site/d2/` hold each design's `ring.glb` and `gallery/` photos.
 
-The model must match the original ring photo: four views on a grey background, labelled "18K White Gold 8.2g / size: 5.5".
-- It's committed at `blender/reference_original.jpg` (1664 × 1184).
-- Don't edit, crop or replace it.
+## Designs
+
+- Design #1 (heart shoulders, v1.0): `designs/d1/`, web files `site/d1/`.
+- Design #2 (oval side stones, v2.0): `designs/d2/`, web files `site/d2/`. Its limits: 8 ovals + 26 × 1.3 mm + centre,
+  size 5.5, GLB at 3.5 MB or less, thin round band (~3 mm). The site shows the owner's 8.6 g gold spec although the
+  thin-band model weighs ~5.2 g (owner decision, round 2): don't bulk it up to 8.6 g.
+- The site picks the design from `?design=N`; per-design model, specs and photos are the `DESIGNS` table in
+  `site/index.html` (`tools/publish.py` keeps each design's `bytes` in step with its GLB).
+
+## Reference photos
+
+Each model must match its owner's picture, `designs/dN/reference/original.jpg`. Don't edit, crop or replace them.
+- Design #1: four views on a grey background, labelled "18K White Gold 8.2g / size: 5.5" (1664 × 1184).
+- Design #2: four views on grey (three-quarter, top, front, side), 1520 × 1296.
 
 ## Commands
 
-- **Build the model** (Blender 4.2, headless, renders with Cycles; CPU is fine):
-  `blender -b -P blender/build_ring.py -- --render`
-  - Writes `blender/ring.glb` (copy it to `site/ring.glb`), `blender/ring.blend`, `blender/ring.stl` (metal only, mm) and `blender/stats.json` (weight, stone counts).
-  - With `--render` it also writes `render_<view>.png` and `cams.json` into `blender/`.
-  - The script is fully parametric; its options are the `arg('--name', default)` calls near the top. The tuned values live in the `TUNED` string, and the first match wins, so put new values at its front.
-  - For quick trials add `--fast --render --res 1000 --samples 24 --views front,side` (about 1 minute; it skips the union, STL, GLB and stats). `--checkonly` only builds and prints collisions.
-- **Comparison scripts** in `blender/` (system `python3` with Pillow and numpy):
-  - They open `reference_original.jpg`, `render_<view>.png`, `cams.json` and `overlay_report.json` relative to the **current directory**, so run them from `blender/` (`cd blender`) after a `--render` build.
-  - Run `overlay_views.py` first: it writes `overlay_report.json`, which the zoom scripts read.
-  - The zoom scripts are `u_post_zoom.py`, `heart_mount_zoom.py`, `gear_check.py`, `closeup.py` and `compare_sheet.py`. Check each one's `sys.argv` defaults before running it.
-  - Their output lands in `blender/`, which is git-ignored for images. Copy the comparison images you want to keep into `renders/`.
-- **Gallery images**:
-  `blender -b blender/ring.blend -P blender/render_gallery.py -- OUTDIR 1600 256 front,top`, then `blender/make_web_gallery.py`.
-  - `make_web_gallery.py` still hard-codes `/workspace/ring/gallery` from an old machine. Fix the path before using it.
-- **Viewer bundle** (three.js r187, three-mesh-bvh 0.9):
-  `npm i three@0.187 three-mesh-bvh@0.9 esbuild && npx esbuild viewer-src/main.js --bundle --format=esm --minify --outfile=site/viewer.js`
-  - When `site/ring.glb` changes size, set `GLB_BYTES` in `viewer-src/main.js` to its exact byte size, then rebuild `site/viewer.js`.
-  - `node_modules/` and `package*.json` are git-ignored, so don't commit them.
-- **Local preview**: `./site/serve.sh 8080`
+Run from the repo root. `make` lists the tasks; `D` picks the design (Blender 4.2 headless, Cycles on CPU).
+- `make trial D=N`: quick front + side renders (~1 min). Writes everything to `build/`, never touches `model/`.
+- `make build D=N`: full build + 4 renders (~15 min) = `blender -b -P designs/dN/build.py -- --render`.
+  Writes `model/` (ring.blend, ring.stl, stats.json) and `build/` (ring.glb, cams.json, render_<view>.png).
+  `--checkonly` (`make check D=N`) only builds the geometry and prints stone counts and collisions.
+- The build scripts are fully parametric: options are the `arg('--name', default)` calls; the tuned values live in
+  the `TUNED` string at the top of each `build.py`, the first match wins, so put new values at its front.
+- `make compare D=N`: outline overlays + IoU (`tools/overlay_views.py`, writes into `build/`).
+- `make review D=N`: review sheet, picture | committed renders | this build (`tools/review_sheet.py`); zoom on any box
+  with `tools/zoom_compare.py`. Keep a round's sheet as `designs/dN/renders/rounds/rNN-review.png`.
+- `make publish D=N`: checks `limits.json`, copies `build/ring.glb` to `site/dN/ring.glb` (updating `bytes` in
+  `site/index.html`) and full-size renders + overlays to `renders/current/`.
+- `make version D=N REV=<commit|tag>`: pulls an old version's files into `build/versions/<rev>/`.
+- A fresh build reproduces the committed GLB/STL byte for byte; after a verification build, restore `model/ring.blend`
+  with `git checkout` instead of committing a binary that only changed its timestamps.
+- **Viewer bundle** (three.js r187, three-mesh-bvh 0.9): `make viewer`. `node_modules/` and `package*.json` are
+  git-ignored. `GLB_BYTES` in `viewer-src/main.js` is only a fallback: the page passes each design's `bytes`.
+- **Local preview**: `make serve` (http://localhost:8080).
+- Design #1 gallery renders: `blender -b designs/d1/model/ring.blend -P designs/d1/tools/render_gallery.py -- OUTDIR 1600 256 front,top`,
+  then `python3 designs/d1/tools/make_web_gallery.py OUTDIR site/d1/gallery`.
+
+## Versions
+
+- Each round is one commit; each `DESIGN.md` has the round -> commit table. Tags: `vX.Y` (owner designs) and `dN-rNN`
+  (rounds), listed in `tools/tag_versions.sh`. Cloud sessions can't push tags, so the owner runs that script locally;
+  add new rounds to it.
+- Repo history is ~727 MB, mostly old `ring.stl` versions. Git LFS / STL-at-milestones is an open owner decision
+  (`docs/VERSIONING.md`); until decided, keep committing `model/` as before.
 
 ## Deploy
 
 - A push to `main` that touches `site/**` runs `.github/workflows/deploy.yml`.
-- The workflow copies `site/` to `/opt/amys-ring/site` on the Aliyun ECS server (Caddy, Let's Encrypt, DuckDNS domain), then checks the live URLs.
+- The workflow checks the site files, copies `site/` to `/opt/amys-ring/site` on the Aliyun ECS server (Caddy, Let's Encrypt, DuckDNS domain), then checks the live URLs (`/`, `/d1/ring.glb`, `/d2/ring.glb`).
 - It uses the repo secrets `SERVER_IP`, `SERVER_UN` and `SERVER_PK`.
 - Server notes are in `deploy/README.md`.
 
@@ -73,12 +94,6 @@ The model must match the original ring photo: four views on a grey background, l
 - `deploy/claude-cloud-setup.sh` is the setup script for the Claude Code cloud environment.
 - It installs Blender 4.2 at `/opt/blender`, available as `blender`, plus Pillow and numpy.
 
-## Open issues (as of the 2026-11-18 handover; update this list as you fix them)
+## Open issues
 
-1. **Side gallery points**: since round 16 they are short and wide with flat ends, and the U edges sit flush with the band face (`--cuflat`), as the owner asked. See `renders/review_round16.png`.
-2. **Heart angle** is 56° (photo: 49°). The heart foot is a V prong since round 15 (`--hm2footv`); the owner rejected the round-14 flat bar.
-3. **Comfort groove** inside the band was removed to hold 8.2 g. Since round 15 the plain lower band has rounded inner edges (`--shrib`), which gives some comfort-fit feel.
-4. **Metal shading**: surfaces facing sideways (the heart channel walls, the front of the heart V prong) render near-black in the Cycles renders, while the photo shows them bright grey. The studio lighting needs more light from the sides.
-5. **Gallery images**: front, side, top and top side (three-quarter) views are crops of the reference photo. The on-hand image is still an old illustration.
-
-Outline match against the photo (IoU, 1.0 = perfect): front 0.884, side 0.932, top 0.935, three-quarter 0.938 (round 16). The owner preferred wider U rims over the round-14 front score (0.895).
+Design #1's are in `designs/d1/DESIGN.md`, design #2's in `designs/d2/DESIGN.md`.
