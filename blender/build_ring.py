@@ -13,7 +13,11 @@ argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 # v1.0 round 8 settings (thick half-round U rims with rounded tulip peaks, elliptical U-seats, sideways 3.0 mm stones, flush pave beads, softened metal). Command-line values win (first match).
 # Round 14 (owner review): straight centre claws, smaller U cups at the photo's 3.0 mm pitch with the stones raised,
 # longer tapered points (shortened under the heart-arm stones), a thin flat heart foot bar, rounder pave bezels.
-TUNED = ('--prongst 1 --pitch3 3.2 --cua 1.42 --lift3 -0.15 --hm2foot 1 --hm2footz0 -2.7 --hm2footz1 1.1 --cure 11.55 --cufl 15 --sro 0.9 --cutipgap 0.35 --bzseg 12 '
+# Round 15 (owner review): heart foot is a V prong (two plates meeting at an outward ridge, cradling the point), wider
+# rounded U rims that catch the light, U cups back near round-13 size, and a rounded women's-ring section on the plain band.
+TUNED = ('--hm2footv 1 --hm2footw 1.8 --hm2footd 0.95 --hm2foott 0.42 --hm2footin 0.25 --hm2footz1 1.1 --hm2footz0 -2.4 --hm2foottilt 12 '
+         '--cua 1.5 --pitch3 3.3 --cue 0.42 --cufr 0.32 --shpn 12 --shrob 1.25 --shrib 0.8 --shdome 0 --shr0 128 --shr1 158 '
+         '--prongst 1 --pitch3 3.2 --cua 1.42 --lift3 -0.15 --hm2foot 1 --hm2footz0 -2.7 --hm2footz1 1.1 --cure 11.55 --cufl 15 --sro 0.9 --cutipgap 0.35 --bzseg 12 '
          '--tilt3 0 --yoff3 0 --sht 2.92 --u3c 0.57 --u3r 1.45 --u3b 1.0 --u3f 0 --claw3 0 --scr 0 --scl 0.4 '
          '--rimr 0.3 --rimrb 0.2 --rimh 0.2 --rimseg 10 --bzseg 8 --segseat 12 '
          '--cove3 0.2 --ro 0.5 --ri 0.45 --gd 0.0 --htilt 60 --legsink -0.6 --shtb 2.5 --bezel 0.05 --bezelz 0.0 --envfloor 0.02 --shm 176 --hairpin 1 --sro 1.02 --hpsb 0.62 --hprt 10.75 --hpdw 0.32 --hprho 1.1 --hpwb 0.3 --hpang 7 --hpmaxl 0.35 --hpnb 5 --hpnr 5 --hpwbt 0.3 --hpst 0.5 --hpgr 0 --hpm0 20 --hpm1 21 --cub 0.8 --cudrop 0.15 --curid 0 --curt 11.1 --cuw 0.3 --curcut 10.2 --cuplz 0.002 --cusq 1 --cusolid 1 --cufr 0.2 --cue 0.3 --cure 11.15 --cufl 6 --cucr 0.1 --cua 1.55 --hm2 1 --hm2st 1 --hm2tc 1.4 --hm2vd 0.55 --hm2vw 1.0 --hm2vy -2.2 --hm2ay1 -2.9 --hm2ax1 1.4 --hm2s0 0.4 --hm2pitch 1.5 --rough 0.16 --goldcol 0.80,0.79,0.76 --curib 1 --cubot 9.27 --curo 0.22 --cuft 0.24 --cuwb 0.18 --sri 0.56 --lift3 -0.6').split()
@@ -52,7 +56,7 @@ LEG_DEG = float(arg('--legdeg', 46))
 HM2 = int(arg('--hm2', 0)); HM2_D = float(arg('--hm2d', 0.65)); HM2_W = float(arg('--hm2w', 0.6)); HM2_YT = float(arg('--hm2yt', 2.6)); HM2_MIT = float(arg('--hm2mit', 1.4))
 HM2_VD = float(arg('--hm2vd', 0.3)); HM2_VW = float(arg('--hm2vw', 0.8)); HM2_VY = float(arg('--hm2vy', -1.5)); HM2_VZ = float(arg('--hm2vz', 0.45)); HM2_CX = float(arg('--hm2cx', 3.0))
 HM2_SINK = float(arg('--hm2sink', 0.5)); HM2_TR = float(arg('--hm2tr', 11.4)); HM2_PW = float(arg('--hm2pw', 2.2)); HM2_PT = float(arg('--hm2pt', 0.8)); HM2_PS = float(arg('--hm2ps', 0.5))
-HM2_S0 = float(arg('--hm2s0', 0.5)); HM2_NW = int(arg('--hm2nw', 4)); HM2_STRAIGHT = int(arg('--hm2st', 0)); HM2_VB = float(arg('--hm2vb', 0.0)); HM2_TC = float(arg('--hm2tc', 0)); HM2_TCY = float(arg('--hm2tcy', 0.15)); HM2_TCW = float(arg('--hm2tcw', 0.7)); HM2_AX0 = float(arg('--hm2ax0', 4.2)); HM2_AY0 = float(arg('--hm2ay0', 2.0)); HM2_AX1 = float(arg('--hm2ax1', 1.3)); HM2_AY1 = float(arg('--hm2ay1', -3.3)); HM2_PLANK = int(arg('--hm2plank', 0)); HM2_CP = float(arg('--hm2cp', 1.5)); HM2_CZ = float(arg('--hm2cz', 0.0)); HM2_FX0 = float(arg('--hm2fx0', 0.95)); HM2_FY0 = float(arg('--hm2fy0', -1.75)); HM2_FX1 = float(arg('--hm2fx1', 0.55)); HM2_FY1 = float(arg('--hm2fy1', -3.3)); HM2_FZ1 = float(arg('--hm2fz1', -3.0)); HM2_FW = float(arg('--hm2fw', 0.8)); HM2_FT = float(arg('--hm2ft', 0.8)); HM2_PITCH = float(arg('--hm2pitch', 1.46)); HM2_PLST = int(arg('--hm2plst', 1)); HM2_FOOT = int(arg('--hm2foot', 0)); HM2_FOOTT = float(arg('--hm2foott', 0.75)); HM2_FOOTW = float(arg('--hm2footw', 1.6)); HM2_FOOTZ0 = float(arg('--hm2footz0', -3.6)); HM2_FOOTIN = float(arg('--hm2footin', 0.15)); HM2_FOOTZ1 = float(arg('--hm2footz1', -99))
+HM2_S0 = float(arg('--hm2s0', 0.5)); HM2_NW = int(arg('--hm2nw', 4)); HM2_STRAIGHT = int(arg('--hm2st', 0)); HM2_VB = float(arg('--hm2vb', 0.0)); HM2_TC = float(arg('--hm2tc', 0)); HM2_TCY = float(arg('--hm2tcy', 0.15)); HM2_TCW = float(arg('--hm2tcw', 0.7)); HM2_AX0 = float(arg('--hm2ax0', 4.2)); HM2_AY0 = float(arg('--hm2ay0', 2.0)); HM2_AX1 = float(arg('--hm2ax1', 1.3)); HM2_AY1 = float(arg('--hm2ay1', -3.3)); HM2_PLANK = int(arg('--hm2plank', 0)); HM2_CP = float(arg('--hm2cp', 1.5)); HM2_CZ = float(arg('--hm2cz', 0.0)); HM2_FX0 = float(arg('--hm2fx0', 0.95)); HM2_FY0 = float(arg('--hm2fy0', -1.75)); HM2_FX1 = float(arg('--hm2fx1', 0.55)); HM2_FY1 = float(arg('--hm2fy1', -3.3)); HM2_FZ1 = float(arg('--hm2fz1', -3.0)); HM2_FW = float(arg('--hm2fw', 0.8)); HM2_FT = float(arg('--hm2ft', 0.8)); HM2_PITCH = float(arg('--hm2pitch', 1.46)); HM2_PLST = int(arg('--hm2plst', 1)); HM2_FOOT = int(arg('--hm2foot', 0)); HM2_FOOTT = float(arg('--hm2foott', 0.75)); HM2_FOOTW = float(arg('--hm2footw', 1.6)); HM2_FOOTZ0 = float(arg('--hm2footz0', -3.6)); HM2_FOOTIN = float(arg('--hm2footin', 0.15)); HM2_FOOTZ1 = float(arg('--hm2footz1', -99)); HM2_FOOTV = int(arg('--hm2footv', 0)); HM2_FOOTD = float(arg('--hm2footd', 0.6)); HM2_FOOTTILT = float(arg('--hm2foottilt', 0.0)); HM2_FOOTOFF = float(arg('--hm2footoff', 0.55))
 LEG_DY = float(arg('--legdy', -0.4)); LEG_R = float(arg('--legr', 0.42))
 LEG_SINK = float(arg('--legsink', -0.8))
 H_COUNTS = [4, 4, 3]
@@ -90,6 +94,7 @@ HP_GR = float(arg('--hpgr', 0.17)); HP_G0 = float(arg('--hpg0', 10.02)); HP_RB =
 HP_ANG = float(arg('--hpang', 5)); HP_MAXL = float(arg('--hpmaxl', 0.18)); HP_NB = int(arg('--hpnb', 6)); HP_NR = int(arg('--hpnr', 6))
 HP_WB = float(arg('--hpwb', 0.36)); HP_H = float(arg('--hph', 0.2)); HP_RO = float(arg('--hpro', 0.3)); HP_DW = float(arg('--hpdw', 0.7)); HP_END = float(arg('--hpend', 0.3))
 HP_GY = float(arg('--hpgy', 0.1)); CU_A = float(arg('--cua', 1.35)); CU_B = float(arg('--cub', 1.05)); CU_RT = float(arg('--curt', 11.0)); CU_W = float(arg('--cuw', 0.22)); CU_RID = int(arg('--curid', 1)); CU_DROP = float(arg('--cudrop', 0.25)); HP_SHIFT = float(arg('--hpshift', 0.08)); CU_BOT = float(arg('--cubot', 9.6)); CU_FLUSH = int(arg('--cuflush', 1)); CU_SQ = int(arg('--cusq', 0)); CU_SOLID = int(arg('--cusolid', 0)); CU_E = float(arg('--cue', 0.46)); CU_FR = float(arg('--cufr', 0.28)); CU_Z = float(arg('--cuz', 0.004)); CU_FL = float(arg('--cufl', 0)); CU_RE = float(arg('--cure', 11.15)); CU_CR = float(arg('--cucr', 0.14)); CU_HALF = float(arg('--cuhalf', 0.35)); CU_RIB = int(arg('--curib', 0)); CU_HC = float(arg('--cuhc', 0.06)); CU_WB = float(arg('--cuwb', 0.18)); CU_FT = float(arg('--cuft', 0.12)); CU_PLZ = float(arg('--cuplz', 0.0)); CU_RO = float(arg('--curo', 0.3)); CU_RCUT = float(arg('--curcut', 10.45)); CU_PT = float(arg('--cupt', 0.8)); HP_SCMIN = float(arg('--hpscmin', 0.45)); HP_CR = float(arg('--hpcr', 0.36)); HP_WBT = float(arg('--hpwbt', 0.55)); HP_M0 = float(arg('--hpm0', 9.95)); HP_GD = float(arg('--hpgd', 0.3)); HP_GE = float(arg('--hpge', 0.3)); HP_M1 = float(arg('--hpm1', 10.25)); HP_W0 = float(arg('--hpw0', 10.25)); HP_W1 = float(arg('--hpw1', 10.85)); HP_G1 = float(arg('--hpg1', 0.05))
+SH_PN = int(arg('--shpn', 5)); SH_ROB = float(arg('--shrob', 0.5)); SH_RIB = float(arg('--shrib', 0.45)); SH_DOME = float(arg('--shdome', 0.0)); SH_R0 = float(arg('--shr0', 140)); SH_R1 = float(arg('--shr1', 165))
 RIM_CAPGAP = float(arg('--rimcapgap', 0.05)); CU_TIPGAP = float(arg('--cutipgap', 0.0))
 ENV_FLOOR = float(arg('--envfloor', 0.30)); ENV_STR = float(arg('--envstr', 1.8))
 SIDE_SPAN = radians(130)      # 1.0 mm side-wall rows run +/-130 deg over the top
@@ -555,10 +560,16 @@ def build():
         return SH_T0 + (SH_T - SH_T0) * smooth(radians(4), radians(28), p) + (SH_TB - SH_T) * smooth(radians(TB_START), pi, p)
     def half_w(phi):
         return SH_W + (SH_WB - SH_W) * smooth(radians(122), pi, abs(phi))
-    def profile(t, w, n=5):
-        ro, ri = SH_RO, SH_RI; pts = []
-        corners = [((R_IN + t - ro, w - ro), ro, 0), ((R_IN + ri, w - ri), ri, 90), ((R_IN + ri, -w + ri), ri, 180), ((R_IN + t - ro, -w + ro), ro, 270)]
+    def profile(t, w, n=SH_PN, rnd=0.0):
+        # rnd 0..1: the plain (stone-free) bottom of the band blends into a soft, rounded women's-ring section:
+        # big outer fillets, a gently domed outer face and rounder inner edges
+        ro = SH_RO + (min(SH_ROB, w - 0.05, t / 2) - SH_RO) * rnd; ri = SH_RI + (SH_RIB - SH_RI) * rnd; dome = SH_DOME * rnd; pts = []
+        corners = [((R_IN + t - ro - dome, w - ro), ro, 0), ((R_IN + ri, w - ri), ri, 90), ((R_IN + ri, -w + ri), ri, 180), ((R_IN + t - ro - dome, -w + ro), ro, 270)]
         for ci, (c, r, a0) in enumerate(corners):
+            if ci == 0:   # domed outer face from the -w corner over to the +w corner (drawn before corner 0)
+                yy0 = w - ro
+                for k in range(1, 2 * n):
+                    yy = -yy0 + 2 * yy0 * k / (2 * n); pts.append((R_IN + t - dome + dome * (1 - (yy / max(yy0, 1e-6)) ** 2) - 0.0, yy))
             for k in range(n):
                 a = radians(a0 + 90 * k / (n - 1)); pts.append((c[0] + r * cos(a), c[1] + r * sin(a)))
             if ci == 1:
@@ -570,7 +581,7 @@ def build():
     secs = []; M = int(arg('--shm', 360))
     for m in range(M):
         phi = -pi + 2 * pi * m / M
-        secs.append([Vector((r * sin(phi), y, r * cos(phi))) for (r, y) in profile(thick(phi), half_w(phi))])
+        secs.append([Vector((r * sin(phi), y, r * cos(phi))) for (r, y) in profile(thick(phi), half_w(phi), rnd=smooth(radians(SH_R0), radians(SH_R1), abs(phi)))])
     metal['Shank'] = loft(secs)
     r_out = lambda phi: R_IN + thick(phi)
 
@@ -1038,7 +1049,25 @@ def build():
                 # from just above the crown straight down past the pavilion to the band
                 yt = -H_SIZE / 2 - HM2_FOOTT / 2 + HM2_FOOTIN
                 z1_ = HM2_FOOTZ1 if HM2_FOOTZ1 > -50 else HM2_VZ
-                arm.extend(lbar((-HM2_FOOTW / 2, yt, (z1_ + HM2_FOOTZ0) / 2), (HM2_FOOTW / 2, yt, (z1_ + HM2_FOOTZ0) / 2), HM2_FOOTT, z1_ - HM2_FOOTZ0))
+                if HM2_FOOTV:
+                    # round 15: the foot is a V prong (two plates meeting at a ridge): the open V cradles the heart's point
+                    # and the ridge faces outward; it runs straight down past the pavilion to the band
+                    Wv, Dv, Tv = HM2_FOOTW, HM2_FOOTD, HM2_FOOTT
+                    ai = -H_SIZE / 2 + HM2_FOOTIN; ao = ai - Tv * 1.25
+                    # two rounded plates whose outer faces form the chevron; they overlap along the ridge.
+                    # The ridge points horizontally outward (world +X for this heart), as the reference side view shows it.
+                    dy_ = -math.tan(radians(HM2_FOOTTILT)) * (z1_ - HM2_FOOTZ0)
+                    Tp, Bp = hl(0, -H_SIZE / 2, z1_), hl(0, -H_SIZE / 2 + dy_, HM2_FOOTZ0)
+                    ax_ = (Bp - Tp).normalized()
+                    rr_ = Vector((1, 0, 0)); rr_ = (rr_ - ax_ * rr_.dot(ax_)).normalized(); ss_ = ax_.cross(rr_).normalized()
+                    for sx_ in (-1, 1):
+                        u_ = (ss_ * (sx_ * Wv / 2) - rr_ * Dv); L_ = u_.length; u_ = u_ / L_
+                        n_ = -(ss_ * (sx_ * Dv) + rr_ * (Wv / 2)).normalized()      # into the V
+                        off = rr_ * HM2_FOOTOFF + u_ * (L_ / 2) + n_ * (Tv / 2)
+                        mbp, _, _, _ = bar(Tp + off, Bp + off, n_, L_ + Tv * 0.6, Tv, rr=min(SOFT_RR, Tv / 2 - 0.02))
+                        arm.extend(mbp)
+                else:
+                    arm.extend(lbar((-HM2_FOOTW / 2, yt, (z1_ + HM2_FOOTZ0) / 2), (HM2_FOOTW / 2, yt, (z1_ + HM2_FOOTZ0) / 2), HM2_FOOTT, z1_ - HM2_FOOTZ0))
             else:
                 VP = vpath(HM2_VD, HM2_VY)
                 arm.extend(lsweep(VP, HM2_VW, ZB + HM2_VB, HM2_VZ, rr=0.28))
