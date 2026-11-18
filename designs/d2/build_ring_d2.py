@@ -19,8 +19,10 @@ exec(compile(open(D1).read(), D1, 'exec'))                    # helpers + global
 
 # --------------------------------------------------------------------------- design #2 parameters
 _uargv = sys.argv[sys.argv.index('--') + 1:]
+# round 2 (owner review): thin round women's band ~3 mm wide (much narrower than the 6.7 mm ovals), claw feet on the
+# OUTSIDE of the band; head claws land on the narrow band top. Gold ~5.2 g in the model (owner keeps 8.6 g as the spec).
 # round 1 (matched to designs/d2/reference.jpg): open band under the ovals (thin inner ring + claws + cradles), 8.6 g
-D2_TUNED = ('--ovrg 10.85 --postr1 12.1 --postr0 8.5 --postr 0.47 --ch 0 --tst 1.4 --tbot 1.95 --wbot 2.2 --ts0 11 --ts1 17 --tb0 112 --tb1 128 --bri 0.5 --bro 0.6 --cry 1.4 --crr 0.36 --crtop 10.2').split()
+D2_TUNED = ('--round 1 --wst 1.5 --wbot 1.5 --ttop 1.8 --tst 1.8 --tbot 1.8 --bri 0.6 --cry 1.6 --prly 1.0 --ovrg 10.85 --postr1 12.1 --postr0 8.5 --postr 0.47 --ch 0 --tst 1.4 --tbot 1.95 --wbot 2.2 --ts0 11 --ts1 17 --tb0 112 --tb1 128 --bri 0.5 --bro 0.6 --cry 1.4 --crr 0.36 --crtop 10.2').split()
 def darg(name, default):
     for src in (_uargv, D2_TUNED):
         if name in src: return src[src.index(name) + 1]
@@ -53,6 +55,7 @@ POST_Y = float(darg('--posty', 2.05)); POST_R = float(darg('--postr', 0.45)); PO
 PR_R = float(darg('--prr', 0.6)); PR_LX, PR_LY, PR_LZ = float(darg('--prlx', 1.9)), float(darg('--prly', 2.3)), float(darg('--prlz', 9.45))
 RL_IN = float(darg('--rlin', 0.30)); RL_H = float(darg('--rlh', 1.2)); RL_TOPGAP = float(darg('--rltop', 0.85)); RL_DEPTH = float(darg('--rld', 0.9))
 RL_N = int(darg('--rln', 26)); RL_D = 1.3
+B_ROUND = int(darg('--round', 0)); POST_FOOTIN = float(darg('--postfoot', 0.55))
 CR = int(darg('--cr', 1)); CR_Y = float(darg('--cry', 2.3)); CR_R = float(darg('--crr', 0.33)); CR_TOP = float(darg('--crtop', 10.3)); CR_GAP = float(darg('--crgap', 0.15))
 BRIDGE = int(darg('--bridge', 1)); BR_R = float(darg('--brr', 0.42)); BR_DZ = float(darg('--brdz', 0.25))
 
@@ -103,7 +106,11 @@ def build():
     def half_w(phi):
         return B_W_ST + (B_W_BOT - B_W_ST) * smooth(radians(B_TAPER0), radians(B_TAPER1), abs(phi))
     def profile(t, w, n=10):
-        ro, ri = min(B_RO, t / 2 - 0.02, w - 0.05), min(B_RI, t / 2 - 0.02); pts = []
+        if B_ROUND:   # round women's band: the outer side is one full curve edge to edge, softly rounded inside
+            ro, ri = min(t, w) - 0.02, min(B_RI, t / 2 - 0.02, w - 0.05); ro = min(ro, w - 0.01, t - ri - 0.02)
+        else:
+            ro, ri = min(B_RO, t / 2 - 0.02, w - 0.05), min(B_RI, t / 2 - 0.02); pts = []
+        pts = []
         for (c, r, a0) in [((R_IN + t - ro, w - ro), ro, 0), ((R_IN + ri, w - ri), ri, 90), ((R_IN + ri, -w + ri), ri, 180), ((R_IN + t - ro, -w + ro), ro, 270)]:
             for k in range(n):
                 a = radians(a0 + 90 * k / (n - 1)); pts.append((c[0] + r * cos(a), c[1] + r * sin(a)))
@@ -146,7 +153,9 @@ def build():
             for ys in (-1, 1):
                 yv = Vector((0, ys * POST_Y, 0))
                 tip_ = rad * (POST_R1 - POST_R * 0.92) + yv     # round (domed) claw ends, as in the reference
-                posts.extend(tube([rad * POST_R0 + yv, (rad * POST_R0 + tip_ + yv * 0) / 2 + yv * 0.5, tip_], [POST_R, POST_R * 0.96, POST_R * 0.92], seg=16, tip=False))
+                # the claw's foot sits on the OUTSIDE of the band (against its side face) and leans out to the tip
+                foot = rad * POST_R0 + Vector((0, ys * (half_w(ph) + POST_R * POST_FOOTIN), 0))
+                posts.extend(tube([foot, (foot + tip_) / 2, tip_], [POST_R, POST_R * 0.96, POST_R * 0.92], seg=16, tip=False))
                 posts.extend(sphere(tip_, POST_R * 0.92, 16, 8))
         # cradles: at each band edge a round wire runs from claw to claw, dipping under each oval's pavilion (U arcs from the front)
         if CR:

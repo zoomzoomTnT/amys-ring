@@ -27,7 +27,8 @@ Live site: https://amysring.duckdns.org
 - Design #1: everything below under Reference photo / Commands (files in `blender/`, `site/ring.glb`, `site/gallery/`).
 - Design #2: `designs/d2/` (picture `reference.jpg`, `build_ring_d2.py`, outputs next to it), web files in `site/d2/`.
   Build: `blender -b -P designs/d2/build_ring_d2.py -- --render`. Compare: `cd designs/d2 && python3 ../../blender/overlay_views.py`.
-  Its hard limits: gold about 8.6 g, 8 ovals + 26 × 1.3 mm + centre, size 5.5, GLB at 3.5 MB or less.
+  Its hard limits: 8 ovals + 26 × 1.3 mm + centre, size 5.5, GLB at 3.5 MB or less, thin round band (~3 mm). The site shows
+  the owner's 8.6 g gold spec although the thin-band model weighs ~5.2 g (owner decision, round 2): don't bulk it up to 8.6 g.
 - The site picks the design from `?design=N`; per-design model, specs and photos are the `DESIGNS` table in `site/index.html`.
   When a design's GLB changes, update its `bytes` there.
 - The "Hard limits" and "Open issues" sections below are design #1's.
