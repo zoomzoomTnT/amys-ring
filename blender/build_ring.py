@@ -11,7 +11,10 @@ from math import sin, cos, pi, radians, sqrt, atan2
 OUT = os.path.dirname(os.path.abspath(__file__))
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 # v1.0 round 8 settings (thick half-round U rims with rounded tulip peaks, elliptical U-seats, sideways 3.0 mm stones, flush pave beads, softened metal). Command-line values win (first match).
-TUNED = ('--tilt3 0 --yoff3 0 --sht 2.92 --u3c 0.57 --u3r 1.45 --u3b 1.0 --u3f 0 --claw3 0 --scr 0 --scl 0.4 '
+# Round 14 (owner review): straight centre claws, smaller U cups at the photo's 3.0 mm pitch with the stones raised,
+# longer tapered points (shortened under the heart-arm stones), a thin flat heart foot bar, rounder pave bezels.
+TUNED = ('--prongst 1 --pitch3 3.2 --cua 1.42 --lift3 -0.15 --hm2foot 1 --hm2footz0 -2.7 --hm2footz1 1.1 --cure 11.55 --cufl 15 --sro 0.9 --cutipgap 0.35 --bzseg 12 '
+         '--tilt3 0 --yoff3 0 --sht 2.92 --u3c 0.57 --u3r 1.45 --u3b 1.0 --u3f 0 --claw3 0 --scr 0 --scl 0.4 '
          '--rimr 0.3 --rimrb 0.2 --rimh 0.2 --rimseg 10 --bzseg 8 --segseat 12 '
          '--cove3 0.2 --ro 0.5 --ri 0.45 --gd 0.0 --htilt 60 --legsink -0.6 --shtb 2.5 --bezel 0.05 --bezelz 0.0 --envfloor 0.02 --shm 176 --hairpin 1 --sro 1.02 --hpsb 0.62 --hprt 10.75 --hpdw 0.32 --hprho 1.1 --hpwb 0.3 --hpang 7 --hpmaxl 0.35 --hpnb 5 --hpnr 5 --hpwbt 0.3 --hpst 0.5 --hpgr 0 --hpm0 20 --hpm1 21 --cub 0.8 --cudrop 0.15 --curid 0 --curt 11.1 --cuw 0.3 --curcut 10.2 --cuplz 0.002 --cusq 1 --cusolid 1 --cufr 0.2 --cue 0.3 --cure 11.15 --cufl 6 --cucr 0.1 --cua 1.55 --hm2 1 --hm2st 1 --hm2tc 1.4 --hm2vd 0.55 --hm2vw 1.0 --hm2vy -2.2 --hm2ay1 -2.9 --hm2ax1 1.4 --hm2s0 0.4 --hm2pitch 1.5 --rough 0.16 --goldcol 0.80,0.79,0.76 --curib 1 --cubot 9.27 --curo 0.22 --cuft 0.24 --cuwb 0.18 --sri 0.56 --lift3 -0.6').split()
 argv = argv + TUNED
@@ -49,7 +52,7 @@ LEG_DEG = float(arg('--legdeg', 46))
 HM2 = int(arg('--hm2', 0)); HM2_D = float(arg('--hm2d', 0.65)); HM2_W = float(arg('--hm2w', 0.6)); HM2_YT = float(arg('--hm2yt', 2.6)); HM2_MIT = float(arg('--hm2mit', 1.4))
 HM2_VD = float(arg('--hm2vd', 0.3)); HM2_VW = float(arg('--hm2vw', 0.8)); HM2_VY = float(arg('--hm2vy', -1.5)); HM2_VZ = float(arg('--hm2vz', 0.45)); HM2_CX = float(arg('--hm2cx', 3.0))
 HM2_SINK = float(arg('--hm2sink', 0.5)); HM2_TR = float(arg('--hm2tr', 11.4)); HM2_PW = float(arg('--hm2pw', 2.2)); HM2_PT = float(arg('--hm2pt', 0.8)); HM2_PS = float(arg('--hm2ps', 0.5))
-HM2_S0 = float(arg('--hm2s0', 0.5)); HM2_NW = int(arg('--hm2nw', 4)); HM2_STRAIGHT = int(arg('--hm2st', 0)); HM2_VB = float(arg('--hm2vb', 0.0)); HM2_TC = float(arg('--hm2tc', 0)); HM2_TCY = float(arg('--hm2tcy', 0.15)); HM2_TCW = float(arg('--hm2tcw', 0.7)); HM2_AX0 = float(arg('--hm2ax0', 4.2)); HM2_AY0 = float(arg('--hm2ay0', 2.0)); HM2_AX1 = float(arg('--hm2ax1', 1.3)); HM2_AY1 = float(arg('--hm2ay1', -3.3)); HM2_PLANK = int(arg('--hm2plank', 0)); HM2_CP = float(arg('--hm2cp', 1.5)); HM2_CZ = float(arg('--hm2cz', 0.0)); HM2_FX0 = float(arg('--hm2fx0', 0.95)); HM2_FY0 = float(arg('--hm2fy0', -1.75)); HM2_FX1 = float(arg('--hm2fx1', 0.55)); HM2_FY1 = float(arg('--hm2fy1', -3.3)); HM2_FZ1 = float(arg('--hm2fz1', -3.0)); HM2_FW = float(arg('--hm2fw', 0.8)); HM2_FT = float(arg('--hm2ft', 0.8)); HM2_PITCH = float(arg('--hm2pitch', 1.46))
+HM2_S0 = float(arg('--hm2s0', 0.5)); HM2_NW = int(arg('--hm2nw', 4)); HM2_STRAIGHT = int(arg('--hm2st', 0)); HM2_VB = float(arg('--hm2vb', 0.0)); HM2_TC = float(arg('--hm2tc', 0)); HM2_TCY = float(arg('--hm2tcy', 0.15)); HM2_TCW = float(arg('--hm2tcw', 0.7)); HM2_AX0 = float(arg('--hm2ax0', 4.2)); HM2_AY0 = float(arg('--hm2ay0', 2.0)); HM2_AX1 = float(arg('--hm2ax1', 1.3)); HM2_AY1 = float(arg('--hm2ay1', -3.3)); HM2_PLANK = int(arg('--hm2plank', 0)); HM2_CP = float(arg('--hm2cp', 1.5)); HM2_CZ = float(arg('--hm2cz', 0.0)); HM2_FX0 = float(arg('--hm2fx0', 0.95)); HM2_FY0 = float(arg('--hm2fy0', -1.75)); HM2_FX1 = float(arg('--hm2fx1', 0.55)); HM2_FY1 = float(arg('--hm2fy1', -3.3)); HM2_FZ1 = float(arg('--hm2fz1', -3.0)); HM2_FW = float(arg('--hm2fw', 0.8)); HM2_FT = float(arg('--hm2ft', 0.8)); HM2_PITCH = float(arg('--hm2pitch', 1.46)); HM2_PLST = int(arg('--hm2plst', 1)); HM2_FOOT = int(arg('--hm2foot', 0)); HM2_FOOTT = float(arg('--hm2foott', 0.75)); HM2_FOOTW = float(arg('--hm2footw', 1.6)); HM2_FOOTZ0 = float(arg('--hm2footz0', -3.6)); HM2_FOOTIN = float(arg('--hm2footin', 0.15)); HM2_FOOTZ1 = float(arg('--hm2footz1', -99))
 LEG_DY = float(arg('--legdy', -0.4)); LEG_R = float(arg('--legr', 0.42))
 LEG_SINK = float(arg('--legsink', -0.8))
 H_COUNTS = [4, 4, 3]
@@ -87,6 +90,7 @@ HP_GR = float(arg('--hpgr', 0.17)); HP_G0 = float(arg('--hpg0', 10.02)); HP_RB =
 HP_ANG = float(arg('--hpang', 5)); HP_MAXL = float(arg('--hpmaxl', 0.18)); HP_NB = int(arg('--hpnb', 6)); HP_NR = int(arg('--hpnr', 6))
 HP_WB = float(arg('--hpwb', 0.36)); HP_H = float(arg('--hph', 0.2)); HP_RO = float(arg('--hpro', 0.3)); HP_DW = float(arg('--hpdw', 0.7)); HP_END = float(arg('--hpend', 0.3))
 HP_GY = float(arg('--hpgy', 0.1)); CU_A = float(arg('--cua', 1.35)); CU_B = float(arg('--cub', 1.05)); CU_RT = float(arg('--curt', 11.0)); CU_W = float(arg('--cuw', 0.22)); CU_RID = int(arg('--curid', 1)); CU_DROP = float(arg('--cudrop', 0.25)); HP_SHIFT = float(arg('--hpshift', 0.08)); CU_BOT = float(arg('--cubot', 9.6)); CU_FLUSH = int(arg('--cuflush', 1)); CU_SQ = int(arg('--cusq', 0)); CU_SOLID = int(arg('--cusolid', 0)); CU_E = float(arg('--cue', 0.46)); CU_FR = float(arg('--cufr', 0.28)); CU_Z = float(arg('--cuz', 0.004)); CU_FL = float(arg('--cufl', 0)); CU_RE = float(arg('--cure', 11.15)); CU_CR = float(arg('--cucr', 0.14)); CU_HALF = float(arg('--cuhalf', 0.35)); CU_RIB = int(arg('--curib', 0)); CU_HC = float(arg('--cuhc', 0.06)); CU_WB = float(arg('--cuwb', 0.18)); CU_FT = float(arg('--cuft', 0.12)); CU_PLZ = float(arg('--cuplz', 0.0)); CU_RO = float(arg('--curo', 0.3)); CU_RCUT = float(arg('--curcut', 10.45)); CU_PT = float(arg('--cupt', 0.8)); HP_SCMIN = float(arg('--hpscmin', 0.45)); HP_CR = float(arg('--hpcr', 0.36)); HP_WBT = float(arg('--hpwbt', 0.55)); HP_M0 = float(arg('--hpm0', 9.95)); HP_GD = float(arg('--hpgd', 0.3)); HP_GE = float(arg('--hpge', 0.3)); HP_M1 = float(arg('--hpm1', 10.25)); HP_W0 = float(arg('--hpw0', 10.25)); HP_W1 = float(arg('--hpw1', 10.85)); HP_G1 = float(arg('--hpg1', 0.05))
+RIM_CAPGAP = float(arg('--rimcapgap', 0.05)); CU_TIPGAP = float(arg('--cutipgap', 0.0))
 ENV_FLOOR = float(arg('--envfloor', 0.30)); ENV_STR = float(arg('--envstr', 1.8))
 SIDE_SPAN = radians(130)      # 1.0 mm side-wall rows run +/-130 deg over the top
 SIDE_R = 0.95                 # their centre, measured out from the inner surface
@@ -97,6 +101,7 @@ ARM_S, ARM_ZT = float(arg('--arms', 1.0)), 12.85
 ARM_BX, ARM_BY, ARM_BZ = 0.85, 1.45, 10.05
 ARM_PITCH = 1.36
 ARM_OFF = float(arg('--armoff', -0.60))
+PRONG_STRAIGHT = int(arg('--prongst', 0)); PRONG_R = float(arg('--prongr', 0.55)); PRONG_TOP = float(arg('--prongtop', 0.25))
 
 # --------------------------------------------------------------------------- mesh builder
 class MB:
@@ -634,7 +639,7 @@ def build():
                         for ii, pp in enumerate(path):
                             for o in caps:
                                 d = (pp - o['center']).length
-                                lim = d - o['D'] / 2 - 0.05
+                                lim = d - o['D'] / 2 - RIM_CAPGAP
                                 if lim < rads[ii]: rads[ii] = max(0.1, lim)
                                 if lim < 0.1:   # still too close: push the rim point inward (toward the finger)
                                     rr_ = Vector((pp.x, 0, pp.z)).normalized(); path[ii] = pp - rr_ * (0.15 - lim)
@@ -691,17 +696,25 @@ def build():
             fl = radians(CU_FL)
             def cupc(k, n=28):
                 return [cc(k) + ev(phs[k]) * (CU_A * cos(radians(th))) + av(phs[k]) * (CU_A * sin(radians(th))) for th in [180 + CU_FL + (180 - 2 * CU_FL) * i / n for i in range(n + 1)]]
-            def wall_s(E, d):   # distance along d from E to radius CU_RE
-                b_ = E.dot(d); c_ = E.dot(E) - CU_RE ** 2; return -b_ + sqrt(max(0.0, b_ * b_ - c_))
+            def re_post(j):   # shorter point where a heart-arm stone sits right above the point's tip
+                tipc = av(posts[j]) * CU_RE; near = 9.0
+                for o in STONES:
+                    if o.get('target') != 'Shank' and o['kind'] == 'round':
+                        c_ = o['center']; near = min(near, (Vector((c_.x, 0, c_.z)) - tipc).length - o['D'] / 2)
+                return CU_RE - max(0.0, CU_TIPGAP - near)
+            REJ = [re_post(j) for j in range(nS + 1)]
+            def wall_s(E, d, j=None):   # distance along d from E to radius CU_RE
+                R_ = REJ[j] if j is not None else CU_RE
+                b_ = E.dot(d); c_ = E.dot(E) - R_ ** 2; return -b_ + sqrt(max(0.0, b_ * b_ - c_))
             def qb(P0, P1, P2, n=6):
                 return [P0 * (1 - u) ** 2 + P1 * 2 * u * (1 - u) + P2 * u * u for u in [i / n for i in range(n + 1)]]
             def line(P, Q, n):
                 return [P + (Q - P) * (i / n) for i in range(n + 1)]
             for j in range(nS + 1):
                 if j > 0:
-                    El = cc(j - 1) + ev(phs[j - 1]) * (CU_A * cos(fl)) - av(phs[j - 1]) * (CU_A * sin(fl)); dl = av(phs[j - 1]) * cos(fl) + ev(phs[j - 1]) * sin(fl); sl = wall_s(El, dl); Le = El + dl * sl
+                    El = cc(j - 1) + ev(phs[j - 1]) * (CU_A * cos(fl)) - av(phs[j - 1]) * (CU_A * sin(fl)); dl = av(phs[j - 1]) * cos(fl) + ev(phs[j - 1]) * sin(fl); sl = wall_s(El, dl, j); Le = El + dl * sl
                 if j < nS:
-                    Er = cc(j) - ev(phs[j]) * (CU_A * cos(fl)) - av(phs[j]) * (CU_A * sin(fl)); dr = av(phs[j]) * cos(fl) - ev(phs[j]) * sin(fl); sr = wall_s(Er, dr); Re = Er + dr * sr
+                    Er = cc(j) - ev(phs[j]) * (CU_A * cos(fl)) - av(phs[j]) * (CU_A * sin(fl)); dr = av(phs[j]) * cos(fl) - ev(phs[j]) * sin(fl); sr = wall_s(Er, dr, j); Re = Er + dr * sr
                 if j == 0: Le = Re - ev(posts[j]) * CU_HALF; El = None
                 if j == nS: Re = Le + ev(posts[j]) * CU_HALF; Er = None
                 ue = (Re - Le).normalized(); cr = min(CU_CR, (Re - Le).length / 2.5)
@@ -912,7 +925,14 @@ def build():
         P3 = P + 0.56 * n + Z(Z_GM)
         P2 = P + 0.40 * n + Z(Z_GB - 0.55)
         Pr = P - RAIL_IN * n + 0.50 * n + Z((RAIL_ZT + RAIL_ZB) / 2)
-        pr.extend(tube([A + Z(0.25), Pr, P2, P3, P4, Ptip], [0.62, 0.64, 0.68, 0.72, 0.66, 0.50], seg=16))
+        if PRONG_STRAIGHT:
+            # reference front view: each claw rises as one straight post from the rail, leaning slightly in toward
+            # the stone, and only hooks over at the very top (no bulge around the girdle)
+            Pt = P + PRONG_TOP * n + Z(Z_GT + 0.45)
+            mids = [Pr + (Pt - Pr) * u for u in (0.33, 0.66)]
+            pr.extend(tube([A + Z(0.25), Pr] + mids + [Pt, Ptip], [PRONG_R, PRONG_R, PRONG_R, PRONG_R * 0.98, PRONG_R * 0.94, PRONG_R * 0.75], seg=16))
+        else:
+            pr.extend(tube([A + Z(0.25), Pr, P2, P3, P4, Ptip], [0.62, 0.64, 0.68, 0.72, 0.66, 0.50], seg=16))
         rad = Vector((A.x, A.y, 0)).normalized(); d = (B - A).normalized(); an = (rad - d * rad.dot(d)).normalized()
         mb_, d, w, an = bar(A - d * 0.3, B, an, 1.45, 1.05, rr=SOFT_RR)
         arms.extend(mb_)
@@ -1013,8 +1033,15 @@ def build():
             # straight splayed arms (reference side view): wide under the lobes, converging onto the V claw at the point
             WPATH = [(HM2_AX0 + (HM2_AX1 - HM2_AX0) * i / 12, HM2_AY0 + (HM2_AY1 - HM2_AY0) * i / 12) for i in range(13)]
             for sx_ in (-1, 1): arm.extend(lsweep([(sx_ * x, y) for (x, y) in WPATH][::sx_], HM2_W, ZB, ZT))
-            VP = vpath(HM2_VD, HM2_VY)
-            arm.extend(lsweep(VP, HM2_VW, ZB + HM2_VB, HM2_VZ, rr=0.28))
+            if HM2_FOOT:
+                # reference: one flat polished bar across the heart's point (edge-on from the front, ~0.75 mm thick),
+                # from just above the crown straight down past the pavilion to the band
+                yt = -H_SIZE / 2 - HM2_FOOTT / 2 + HM2_FOOTIN
+                z1_ = HM2_FOOTZ1 if HM2_FOOTZ1 > -50 else HM2_VZ
+                arm.extend(lbar((-HM2_FOOTW / 2, yt, (z1_ + HM2_FOOTZ0) / 2), (HM2_FOOTW / 2, yt, (z1_ + HM2_FOOTZ0) / 2), HM2_FOOTT, z1_ - HM2_FOOTZ0))
+            else:
+                VP = vpath(HM2_VD, HM2_VY)
+                arm.extend(lsweep(VP, HM2_VW, ZB + HM2_VB, HM2_VZ, rr=0.28))
             if HM2_TC > 0:   # solid top cap across the lobes (front view: thick bar at the heart's upper end, meeting the rail)
                 arm.extend(lbar((-HM2_TC, H_SIZE / 2 + HM2_TCY, (ZT + HM2_VZ) / 2 - 0.3), (HM2_TC, H_SIZE / 2 + HM2_TCY, (ZT + HM2_VZ) / 2 - 0.3), HM2_TCW, HM2_VZ - ZT + 0.6))
         else:
@@ -1089,7 +1116,7 @@ def build():
             x_, y_, nx, ny = at(HM2_S0 + k * HM2_PITCH)
             for s in (-1, 1):
                 hst.append((Vector((s * (x_ + nx * (HM2_W / 2 - 0.04)), y_ + ny * (HM2_W / 2 - 0.04), zc)), Vector((s * nx, ny, 0)), s))
-        if PLANK:
+        if PLANK and HM2_PLST:
             A_, B_, nn = PLANK; mid = A_ + (B_ - A_) * HM2_PS
             hst.append((HMI @ (mid + nn * (HM2_PT / 2 - 0.04)), HMI.to_3x3() @ nn, 0))
         else:
@@ -1320,6 +1347,8 @@ def main():
     parts = {o.name: round(mesh_volume(o), 2) for o in metal_objects()}
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, 'ring.blend'))
     log('saved blend')
+    if '--fast' in argv:   # trial renders only: skip the metal union, STL, GLB and stats
+        log('parts', json.dumps(parts)); return fast_render()
     # ---- union metal -> STL + volume
     un = union_metal(0.05)
     vol = mesh_volume(un)
@@ -1352,6 +1381,9 @@ def main():
     stats['tris'] = sum(sum(len(p.vertices) - 2 for p in o.data.polygons) for o in COLL.objects)
     json.dump(stats, open(os.path.join(OUT, 'stats.json'), 'w'), indent=1)
     log(json.dumps(stats, indent=1))
+    if DO_RENDER: fast_render()
+
+def fast_render():
     if DO_RENDER:
         bpy.ops.wm.open_mainfile(filepath=os.path.join(OUT, 'ring.blend'))
         sc = bpy.context.scene

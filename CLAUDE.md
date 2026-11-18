@@ -29,9 +29,10 @@ The model must match the original ring photo: four views on a grey background, l
 
 - **Build the model** (Blender 4.2, headless, renders with Cycles; CPU is fine):
   `blender -b -P blender/build_ring.py -- --render`
-  - Writes `site/ring.glb`, `blender/ring.blend`, `blender/ring.stl` (metal only, mm) and `blender/stats.json` (weight, stone counts).
+  - Writes `blender/ring.glb` (copy it to `site/ring.glb`), `blender/ring.blend`, `blender/ring.stl` (metal only, mm) and `blender/stats.json` (weight, stone counts).
   - With `--render` it also writes `render_<view>.png` and `cams.json` into `blender/`.
-  - The script is fully parametric; its options are the `arg('--name', default)` calls near the top.
+  - The script is fully parametric; its options are the `arg('--name', default)` calls near the top. The tuned values live in the `TUNED` string, and the first match wins, so put new values at its front.
+  - For quick trials add `--fast --render --res 1000 --samples 24 --views front,side` (about 1 minute; it skips the union, STL, GLB and stats). `--checkonly` only builds and prints collisions.
 - **Comparison scripts** in `blender/` (system `python3` with Pillow and numpy):
   - They open `reference_original.jpg`, `render_<view>.png`, `cams.json` and `overlay_report.json` relative to the **current directory**, so run them from `blender/` (`cd blender`) after a `--render` build.
   - Run `overlay_views.py` first: it writes `overlay_report.json`, which the zoom scripts read.
@@ -60,15 +61,10 @@ The model must match the original ring photo: four views on a grey background, l
 
 ## Open issues (as of the 2026-11-18 handover; update this list as you fix them)
 
-1. **Side gallery still slightly gear-like.**
-   - The points are 1.0 mm long (photo: 1.75 mm) and stick out 0.7 mm (photo: 0.42 mm). They also have a small T-shaped head.
-   - They should be longer and sit closer to the stones. See `renders/gear_check.png` and `renders/u_post_zoom.png`.
-2. **Left heart claw** shows as a dark block from the front.
-   - It is 2.5 mm long (photo: 3.8 mm) and 0.9 mm thick (photo: 0.75 mm).
-   - The heart angle is 56° (photo: 49°). See `renders/heart_mount_zoom.png`.
+1. **Side gallery points** are now longer and closer to the stones (round 14), but still end in a small squared head; the photo's points taper to a narrower tip. See `renders/review_round14.png`.
+2. **Heart angle** is 56° (photo: 49°). The heart foot itself was fixed in round 14 (a flat 0.75 mm bar down to the band).
 3. **Comfort groove** inside the band was removed to hold 8.2 g. Restore it, for example by thickening the band slightly.
-4. **3.0 mm stone spacing**: the stones sit about 1.4 mm too far along the band (pitch 18.7°; photo: 17.2°).
-5. **Metal shading** reads flatter and lighter than the photo, which shows strong light-to-dark gradients on the points.
-6. **Gallery images**: re-render `site/gallery/front.webp`, `top.webp` and the on-hand image from the current model.
+4. **Metal shading** reads flatter and lighter than the photo, which shows strong light-to-dark gradients on the points.
+5. **Gallery images**: the front and top views now show crops of the reference photo. The on-hand image is still an old illustration.
 
-Outline match against the photo (IoU, 1.0 = perfect): front 0.86, side 0.93, top 0.93, three-quarter 0.93.
+Outline match against the photo (IoU, 1.0 = perfect): front 0.895, side 0.937, top 0.935, three-quarter 0.933.

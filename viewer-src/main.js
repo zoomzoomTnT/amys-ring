@@ -203,11 +203,11 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract, on
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true; controls.dampingFactor = 0.08;
   controls.enablePan = true; controls.screenSpacePanning = true;
-  controls.autoRotate = !STILL; controls.autoRotateSpeed = 16 / 6; // ~16deg/s
+  controls.autoRotate = !STILL; controls.autoRotateSpeed = 1.3; // ~8deg/s: a slow, calm turn
   controls.rotateSpeed = 0.8;
 
-  let home = null;
-  controls.addEventListener('start', () => { controls.autoRotate = false; onInteract && onInteract(); });
+  let home = null, intro = null;
+  controls.addEventListener('start', () => { controls.autoRotate = false; intro = null; onInteract && onInteract(); });
 
   // soft contact shadow (cheap radial gradient)
   const sc = document.createElement('canvas'); sc.width = sc.height = 128;
@@ -238,7 +238,7 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract, on
     }
   }
 
-  const GLB_BYTES = 2728428; // fallback when the server gzips and sends no Content-Length
+  const GLB_BYTES = 2802044; // fallback when the server gzips and sends no Content-Length
   const loader = new GLTFLoader();
   const url = qs.get('fail') === 'load' ? src + '.missing' : src;
   loader.load(url, async (gltf) => {
@@ -269,13 +269,16 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract, on
     shadow.position.set(ctr.x, bb.min.y - radius * 0.02, ctr.z);
     shadow.scale.setScalar(Math.max(size.x, size.z) * 1.15);
     controls.target.copy(ctr);
-    const dist = radius / Math.sin(THREE.MathUtils.degToRad(22) / 2) * (window.innerWidth > window.innerHeight ? 0.88 : 1.02);
+    // open a little further out so the whole ring sits with room around it
+    const dist = radius / Math.sin(THREE.MathUtils.degToRad(22) / 2) * (window.innerWidth > window.innerHeight ? 1.22 : 1.25);
     // default framing: azimuth -40deg, polar 70deg
     const th = THREE.MathUtils.degToRad(-40), ph = THREE.MathUtils.degToRad(70);
     const pos = new THREE.Vector3(Math.sin(ph) * Math.sin(th), Math.cos(ph), Math.sin(ph) * Math.cos(th)).multiplyScalar(dist).add(ctr);
     home = { pos, target: ctr.clone(), dist };
     camera.position.copy(pos); camera.near = dist / 50; camera.far = dist * 10; camera.updateProjectionMatrix();
-    controls.minDistance = dist * 0.35; controls.maxDistance = dist * 2.2;
+    controls.minDistance = dist * 0.25; controls.maxDistance = dist * 1.8;
+    // gentle opening glide: start a touch further out and ease in to the home view
+    if (!STILL) { camera.position.copy(ctr).addScaledVector(pos.clone().sub(ctr), 1.18); intro = { t0: -1 }; }
     controls.update();
     // compile shaders without blocking the page (KHR_parallel_shader_compile where available)
     try {
@@ -306,6 +309,14 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract, on
   let ready = false, running = true, frames = [], last = 0, slowChecks = 0;
   renderer.setAnimationLoop((t) => {
     if (!running || failed) return;
+    if (intro && home) {
+      if (intro.t0 < 0) intro.t0 = t;
+      const u = Math.min(1, (t - intro.t0) / 2600), e = 1 - Math.pow(1 - u, 3);
+      // keep whatever direction the slow turn has reached, only ease the distance
+      const off = camera.position.clone().sub(controls.target);
+      camera.position.copy(controls.target).add(off.setLength(home.dist * (1.18 - 0.18 * e)));
+      if (u >= 1) intro = null;
+    }
     controls.update();
     renderer.render(scene, camera);
     if (shaderBroken && tier !== 'basic' && ready) { applyTier('basic'); return; }
@@ -325,7 +336,7 @@ export function startViewer({ container, src, onProgress, onLoad, onInteract, on
   return {
     reset() {
       if (!home) return;
-      camera.position.copy(home.pos); controls.target.copy(home.target); controls.update();
+      intro = null; camera.position.copy(home.pos); controls.target.copy(home.target); controls.update();
       controls.autoRotate = !STILL;
     },
     pause(p) { running = !p; last = 0; frames = []; },

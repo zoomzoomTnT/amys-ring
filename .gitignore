@@ -8,3 +8,6 @@ package-lock.json
 blender/*.png
 blender/cams.json
 overlay_report.json
+
+# Build copy of the web model (the tracked one is site/ring.glb)
+blender/ring.glb
